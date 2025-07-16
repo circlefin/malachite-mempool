@@ -2,7 +2,9 @@
 A production-ready mempool ready to be used with Malachite BFT Consensus Engine
 
 
-## Copyright © 2025 Informal Systems AG. All rights reserved.
+## License
+
+Copyright © 2025 Informal Systems AG. All rights reserved.
 
 This repository and its contents, including but not limited to source code, documentation, specifications, and associated materials (collectively, the "Software"), are proprietary to Informal Systems AG (the "Company").
 
