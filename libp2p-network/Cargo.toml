@@ -1,0 +1,17 @@
+[package]
+name = "libp2p-network"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ractor = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+prost-types = { workspace = true }
+rand = { workspace = true }
+tokio = { workspace = true }
+libp2p-identity = { workspace = true }
+libp2p = { workspace = true }
+malachitebft-engine = { workspace = true }
+malachitebft-metrics = { workspace = true }
+malachitebft-test-mempool = { workspace = true } 
