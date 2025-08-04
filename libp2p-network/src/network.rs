@@ -1,11 +1,12 @@
+use crate::output_port::{OutputPort, OutputPortSubscriber};
+
 use {
     libp2p_identity::Keypair,
-    malachitebft_engine::util::output_port::{OutputPort, OutputPortSubscriber},
     malachitebft_metrics::SharedRegistry,
     malachitebft_test_mempool::{
         handle::CtrlHandle, types::MempoolTransactionBatch, Channel::Mempool, Event, PeerId,
     },
-    ractor::{async_trait, Actor, ActorProcessingErr, ActorRef},
+    ractor::{Actor, ActorProcessingErr, ActorRef},
     std::{collections::BTreeSet, sync::Arc},
     tokio::task::JoinHandle,
     tracing::{error, info},
@@ -67,7 +68,6 @@ impl MempoolNetwork {
     }
 }
 
-#[async_trait]
 impl Actor for MempoolNetwork {
     type Arguments = Args;
     type Msg = Msg;

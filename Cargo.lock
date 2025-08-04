@@ -18,16 +18,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
 
 [[package]]
-name = "advisory-lock"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6caee7d48f930f9ad3fc9546f8cbf843365da0c5b0ca4eee1d1ac3dd12d8f93"
-dependencies = [
- "libc",
- "winapi",
-]
-
-[[package]]
 name = "aead"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -179,17 +169,6 @@ dependencies = [
  "event-listener",
  "event-listener-strategy",
  "pin-project-lite",
-]
-
-[[package]]
-name = "async-recursion"
-version = "1.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b43422f69d8ff38f95f1b2bb76517c91589a924d1559a0e935d7c8ce0274c11"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -501,15 +480,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59ed5838eebb26a2bb2e58f6d5b5316989ae9d08bab10e0e6d103e656d1b0280"
 dependencies = [
  "libc",
-]
-
-[[package]]
-name = "crc32fast"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9481c1c90cbf2ac953f07c8d4a58aa3945c425b7185c9154d67a65e4230da511"
-dependencies = [
- "cfg-if",
 ]
 
 [[package]]
@@ -1081,21 +1051,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "genawaiter"
-version = "0.99.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c86bd0361bcbde39b13475e6e36cb24c329964aa2611be285289d1e4b751c1a0"
-dependencies = [
- "genawaiter-macro",
-]
-
-[[package]]
-name = "genawaiter-macro"
-version = "0.99.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b32dfe1fdfc0bbde1f22a5da25355514b5e450c33a6af6770884c8750aedfbc"
-
-[[package]]
 name = "generator"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1616,13 +1571,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "informalsystems-malachitebft-codec"
-version = "0.5.0"
-dependencies = [
- "bytes",
-]
-
-[[package]]
 name = "informalsystems-malachitebft-config"
 version = "0.5.0"
 dependencies = [
@@ -1632,33 +1580,6 @@ dependencies = [
  "informalsystems-malachitebft-core-types",
  "multiaddr",
  "serde",
-]
-
-[[package]]
-name = "informalsystems-malachitebft-core-consensus"
-version = "0.5.0"
-dependencies = [
- "async-recursion",
- "derive-where",
- "genawaiter",
- "informalsystems-malachitebft-core-driver",
- "informalsystems-malachitebft-core-types",
- "informalsystems-malachitebft-metrics",
- "informalsystems-malachitebft-peer",
- "multiaddr",
- "thiserror 2.0.12",
- "tracing",
-]
-
-[[package]]
-name = "informalsystems-malachitebft-core-driver"
-version = "0.5.0"
-dependencies = [
- "derive-where",
- "informalsystems-malachitebft-core-state-machine",
- "informalsystems-malachitebft-core-types",
- "informalsystems-malachitebft-core-votekeeper",
- "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -1681,79 +1602,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "informalsystems-malachitebft-core-votekeeper"
-version = "0.5.0"
-dependencies = [
- "derive-where",
- "informalsystems-malachitebft-core-types",
- "thiserror 2.0.12",
-]
-
-[[package]]
-name = "informalsystems-malachitebft-discovery"
-version = "0.5.0"
-dependencies = [
- "either",
- "informalsystems-malachitebft-metrics",
- "libp2p 0.56.0",
- "rand 0.8.5",
- "serde",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "informalsystems-malachitebft-engine"
-version = "0.5.0"
-dependencies = [
- "async-recursion",
- "async-trait",
- "byteorder",
- "bytes",
- "derive-where",
- "eyre",
- "informalsystems-malachitebft-codec",
- "informalsystems-malachitebft-config",
- "informalsystems-malachitebft-core-consensus",
- "informalsystems-malachitebft-core-types",
- "informalsystems-malachitebft-metrics",
- "informalsystems-malachitebft-network",
- "informalsystems-malachitebft-sync",
- "informalsystems-malachitebft-wal",
- "libp2p 0.56.0",
- "ractor",
- "rand 0.8.5",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "informalsystems-malachitebft-metrics"
 version = "0.5.0"
 dependencies = [
  "informalsystems-malachitebft-core-state-machine",
  "prometheus-client",
-]
-
-[[package]]
-name = "informalsystems-malachitebft-network"
-version = "0.5.0"
-dependencies = [
- "bytes",
- "either",
- "eyre",
- "futures",
- "informalsystems-malachitebft-discovery",
- "informalsystems-malachitebft-metrics",
- "informalsystems-malachitebft-peer",
- "informalsystems-malachitebft-sync",
- "libp2p 0.56.0",
- "libp2p-gossipsub",
- "libp2p-scatter",
- "seahash",
- "serde",
- "tokio",
- "tracing",
 ]
 
 [[package]]
@@ -1775,26 +1628,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "informalsystems-malachitebft-sync"
-version = "0.5.0"
-dependencies = [
- "async-trait",
- "bytes",
- "dashmap",
- "derive-where",
- "displaydoc",
- "genawaiter",
- "informalsystems-malachitebft-core-types",
- "informalsystems-malachitebft-metrics",
- "informalsystems-malachitebft-peer",
- "libp2p 0.56.0",
- "rand 0.8.5",
- "serde",
- "thiserror 2.0.12",
- "tracing",
-]
-
-[[package]]
 name = "informalsystems-malachitebft-test-mempool"
 version = "0.5.0"
 dependencies = [
@@ -1811,16 +1644,6 @@ dependencies = [
  "seahash",
  "tokio",
  "tracing",
-]
-
-[[package]]
-name = "informalsystems-malachitebft-wal"
-version = "0.5.0"
-dependencies = [
- "advisory-lock",
- "bytes",
- "cfg-if",
- "crc32fast",
 ]
 
 [[package]]
@@ -2233,7 +2056,7 @@ dependencies = [
 name = "libp2p-network"
 version = "0.1.0"
 dependencies = [
- "informalsystems-malachitebft-engine",
+ "async-trait",
  "informalsystems-malachitebft-metrics",
  "informalsystems-malachitebft-test-mempool",
  "libp2p 0.53.2",
@@ -2324,21 +2147,6 @@ dependencies = [
  "serde",
  "smallvec",
  "tracing",
-]
-
-[[package]]
-name = "libp2p-scatter"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea402c419f99e6013d5b12f97c5a1a1abe4aca285844b01b0ed96deab11f0b6e"
-dependencies = [
- "bytes",
- "fnv",
- "futures",
- "libp2p 0.56.0",
- "prometheus-client",
- "tracing",
- "unsigned-varint 0.8.0",
 ]
 
 [[package]]
@@ -3361,7 +3169,6 @@ version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d65972a0286ef14c43c6daafbac6cf15e96496446147683b2905292c35cc178"
 dependencies = [
- "async-trait",
  "bon",
  "dashmap",
  "futures",

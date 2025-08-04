@@ -12,7 +12,7 @@ eyre = "0.6"
 ractor = "0.14.6"
 thiserror = "2.0"
 tracing = "0.1"
-tracing-subscriber = "0.3"
+async-trait = "0.1"
 prost-types = "0.13"
 rand = "0.8"
 tokio = { version = "1.46.1", features = ["full", "test-util"] }
@@ -20,6 +20,7 @@ libp2p-identity = "0.2.12"
 libp2p = "0.53"
 prost = "0.12"
 prometheus-client = "0.23"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 anyhow = "1.0"
 serde = "1.0"
 serde_json = "1.0"
@@ -27,6 +28,5 @@ futures = "0.3"
 prometheus = "0.13"
 sha2 = "0.10"
 malachitebft-config = { package = "informalsystems-malachitebft-config", path = "../malachite/code/crates/config" }
-malachitebft-engine = { package = "informalsystems-malachitebft-engine", path = "../malachite/code/crates/engine" }
 malachitebft-metrics = { package = "informalsystems-malachitebft-metrics", path = "../malachite/code/crates/metrics" }
 malachitebft-test-mempool = { package = "informalsystems-malachitebft-test-mempool", path = "../malachite/code/crates/test/mempool" }
