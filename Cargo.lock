@@ -224,9 +224,9 @@ checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 
 [[package]]
 name = "attohttpc"
-version = "0.30.0"
+version = "0.30.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4180190041c339065ac865d659c9b5dd5aeeefe16a3c7efbafa9ac2aab147990"
+checksum = "16e2cdb6d5ed835199484bb92bb8b3edd526effe995c61732580439c1a67e2e9"
 dependencies = [
  "base64",
  "http",
@@ -907,7 +907,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "futures",
- "informalsystems-malachitebft-engine",
  "informalsystems-malachitebft-metrics",
  "informalsystems-malachitebft-test-mempool",
  "libp2p 0.53.2",
@@ -1318,6 +1317,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytesize",
+ "eyre",
  "fifo-mempool",
  "informalsystems-malachitebft-config",
  "informalsystems-malachitebft-metrics",
@@ -1332,6 +1332,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -1616,14 +1617,14 @@ dependencies = [
 
 [[package]]
 name = "informalsystems-malachitebft-codec"
-version = "0.5.0-pre"
+version = "0.5.0"
 dependencies = [
  "bytes",
 ]
 
 [[package]]
 name = "informalsystems-malachitebft-config"
-version = "0.5.0-pre"
+version = "0.5.0"
 dependencies = [
  "bytesize",
  "config",
@@ -1635,7 +1636,7 @@ dependencies = [
 
 [[package]]
 name = "informalsystems-malachitebft-core-consensus"
-version = "0.5.0-pre"
+version = "0.5.0"
 dependencies = [
  "async-recursion",
  "derive-where",
@@ -1651,7 +1652,7 @@ dependencies = [
 
 [[package]]
 name = "informalsystems-malachitebft-core-driver"
-version = "0.5.0-pre"
+version = "0.5.0"
 dependencies = [
  "derive-where",
  "informalsystems-malachitebft-core-state-machine",
@@ -1662,7 +1663,7 @@ dependencies = [
 
 [[package]]
 name = "informalsystems-malachitebft-core-state-machine"
-version = "0.5.0-pre"
+version = "0.5.0"
 dependencies = [
  "derive-where",
  "displaydoc",
@@ -1671,7 +1672,7 @@ dependencies = [
 
 [[package]]
 name = "informalsystems-malachitebft-core-types"
-version = "0.5.0-pre"
+version = "0.5.0"
 dependencies = [
  "bytes",
  "derive-where",
@@ -1681,7 +1682,7 @@ dependencies = [
 
 [[package]]
 name = "informalsystems-malachitebft-core-votekeeper"
-version = "0.5.0-pre"
+version = "0.5.0"
 dependencies = [
  "derive-where",
  "informalsystems-malachitebft-core-types",
@@ -1690,7 +1691,7 @@ dependencies = [
 
 [[package]]
 name = "informalsystems-malachitebft-discovery"
-version = "0.5.0-pre"
+version = "0.5.0"
 dependencies = [
  "either",
  "informalsystems-malachitebft-metrics",
@@ -1703,7 +1704,7 @@ dependencies = [
 
 [[package]]
 name = "informalsystems-malachitebft-engine"
-version = "0.5.0-pre"
+version = "0.5.0"
 dependencies = [
  "async-recursion",
  "async-trait",
@@ -1728,7 +1729,7 @@ dependencies = [
 
 [[package]]
 name = "informalsystems-malachitebft-metrics"
-version = "0.5.0-pre"
+version = "0.5.0"
 dependencies = [
  "informalsystems-malachitebft-core-state-machine",
  "prometheus-client",
@@ -1736,7 +1737,7 @@ dependencies = [
 
 [[package]]
 name = "informalsystems-malachitebft-network"
-version = "0.5.0-pre"
+version = "0.5.0"
 dependencies = [
  "bytes",
  "either",
@@ -1757,7 +1758,7 @@ dependencies = [
 
 [[package]]
 name = "informalsystems-malachitebft-peer"
-version = "0.5.0-pre"
+version = "0.5.0"
 dependencies = [
  "bs58",
  "multihash",
@@ -1766,7 +1767,7 @@ dependencies = [
 
 [[package]]
 name = "informalsystems-malachitebft-proto"
-version = "0.5.0-pre"
+version = "0.5.0"
 dependencies = [
  "prost 0.13.5",
  "prost-types",
@@ -1775,7 +1776,7 @@ dependencies = [
 
 [[package]]
 name = "informalsystems-malachitebft-sync"
-version = "0.5.0-pre"
+version = "0.5.0"
 dependencies = [
  "async-trait",
  "bytes",
@@ -1795,7 +1796,7 @@ dependencies = [
 
 [[package]]
 name = "informalsystems-malachitebft-test-mempool"
-version = "0.5.0-pre"
+version = "0.5.0"
 dependencies = [
  "eyre",
  "futures",
@@ -1814,7 +1815,7 @@ dependencies = [
 
 [[package]]
 name = "informalsystems-malachitebft-wal"
-version = "0.5.0-pre"
+version = "0.5.0"
 dependencies = [
  "advisory-lock",
  "bytes",

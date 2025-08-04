@@ -7,11 +7,10 @@ use {
         sync::Arc,
     },
     thiserror::Error,
-    tracing::{error, info, warn, Span},
+    tracing::{debug, error, info, warn, Span},
 };
 
 // Placeholder types for external dependencies
-pub type AppError = crate::AppError;
 pub type NetworkEvent = malachitebft_test_mempool::Event;
 pub type GossipNetworkMsg = malachitebft_test_mempool::NetworkMsg;
 pub type MempoolNetworkActorRef = ActorRef<libp2p_network::Msg>;
@@ -54,13 +53,13 @@ pub enum Msg {
     NetworkEvent(Arc<NetworkEvent>),
     Add {
         tx: RawTx,
-        reply: RpcReplyPort<Result<crate::CheckTxOutcome, MempoolError>>,
+        reply: RpcReplyPort<Result<Box<dyn crate::CheckTxOutcome>, MempoolError>>,
     },
     // TODO: figure out how to properly handle messages outside consensus
     CheckTxResult {
         tx: RawTx,
-        result: Result<crate::CheckTxOutcome, AppError>,
-        reply: Option<RpcReplyPort<Result<crate::CheckTxOutcome, MempoolError>>>,
+        result: Result<Box<dyn crate::CheckTxOutcome>, Box<dyn std::error::Error + Send + Sync>>,
+        reply: Option<RpcReplyPort<Result<Box<dyn crate::CheckTxOutcome>, MempoolError>>>,
     },
     Take {
         reply: RpcReplyPort<Vec<RawTx>>,
@@ -119,7 +118,7 @@ impl Mempool {
 
     fn handle_network_event(&self, event: &NetworkEvent, state: &mut State) -> ActorResult<()> {
         // Handle network events from the gossip network
-        info!("Received network event: {:?}", event);
+        debug!("Received network event: {:?}", event);
 
         match event {
             NetworkEvent::Message(.., network_msg) => {
@@ -148,7 +147,7 @@ impl Mempool {
     fn add_tx(
         &self,
         tx: RawTx,
-        reply: Option<RpcReplyPort<Result<crate::CheckTxOutcome, MempoolError>>>,
+        reply: Option<RpcReplyPort<Result<Box<dyn crate::CheckTxOutcome>, MempoolError>>>,
         state: &mut State,
     ) -> ActorResult<()> {
         let tx_hash = tx.hash();
@@ -176,26 +175,30 @@ impl Mempool {
     fn handle_check_tx_result(
         &self,
         tx: RawTx,
-        result: Result<crate::CheckTxOutcome, AppError>,
-        reply: Option<RpcReplyPort<Result<crate::CheckTxOutcome, MempoolError>>>,
+        result: Result<Box<dyn crate::CheckTxOutcome>, Box<dyn std::error::Error + Send + Sync>>,
+        reply: Option<RpcReplyPort<Result<Box<dyn crate::CheckTxOutcome>, MempoolError>>>,
         state: &mut State,
     ) -> ActorResult<()> {
         match result {
-            Ok(_check_tx_outcome) => {
-                info!("tx validation successful, adding to mempool");
-                let tx_hash = tx.hash();
-                state.tx_hashes.insert(tx_hash, state.txs.len());
-                state.txs.push_back(tx.clone());
-                self.gossip_tx(tx)?;
-
+            Ok(check_tx_outcome) => {
+                if check_tx_outcome.is_valid() {
+                    debug!("check_tx successful, tx is valid, adding tx to mempool");
+                    let tx_hash = tx.hash();
+                    state.tx_hashes.insert(tx_hash, state.txs.len());
+                    state.txs.push_back(tx.clone());
+                    self.gossip_tx(tx)?;
+                } else {
+                    warn!(reason = ?check_tx_outcome, "check_tx successful, tx is invalid, not adding to mempool");
+                }
                 if let Some(reply) = reply {
-                    reply.send(Ok(crate::CheckTxOutcome))?;
+                    reply.send(Ok(check_tx_outcome))?;
                 }
             }
+
             Err(app_error) => {
-                warn!(reason = ?app_error, "check_tx failed!");
+                error!(reason = ?app_error, "check_tx failed!");
                 if let Some(reply) = reply {
-                    reply.send(Err(MempoolError::App(app_error)))?;
+                    reply.send(Err(MempoolError::App(app_error.to_string())))?;
                 }
             }
         }
@@ -235,7 +238,7 @@ impl Mempool {
             }
         }
 
-        info!("removed {} txs from mempool", ignore.len());
+        debug!("removed {} txs from mempool", ignore.len());
 
         let mut new_txs = VecDeque::with_capacity(state.txs.len() - ignore.len());
         let mut new_hashes = HashMap::with_capacity(state.txs.len() - ignore.len());
@@ -272,7 +275,7 @@ impl Mempool {
         {
             error!("Failed to gossip transaction: {:?}", e);
         } else {
-            info!("Successfully gossiped transaction");
+            debug!("Successfully gossiped transaction");
         }
 
         Ok(())
@@ -315,8 +318,8 @@ impl Actor for Mempool {
 
 #[derive(Clone, Debug, Error)]
 pub enum MempoolError {
-    #[error(transparent)]
-    App(#[from] AppError),
+    #[error("Application error: {0}")]
+    App(String),
 
     #[error("tx already exists in mempool: {0}")]
     TxAlreadyExists(TxHash),

@@ -1,38 +1,24 @@
 use fifo_mempool::{
     mempool::{spawn_mempool_actor, MempoolConfig, Msg},
-    AppResult, CheckTxOutcome, MempoolApp, RawTx,
+    RawTx,
 };
 use libp2p_identity::Keypair;
 use libp2p_network::spawn_mempool_network_actor;
 use malachitebft_metrics::SharedRegistry;
 use prometheus_client::registry::Registry;
-use prost::bytes::Bytes;
 use ractor::ActorRef;
 use std::sync::Arc;
 
-use crate::config::HostMempoolConfig;
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct TestTx(pub u64); // Unique transaction by id
-
-impl TestTx {
-    pub fn serialize(&self) -> RawTx {
-        RawTx(Bytes::from(self.0.to_le_bytes().to_vec()))
-    }
-    pub fn deserialize(bytes: &[u8]) -> Result<TestTx, anyhow::Error> {
-        Ok(TestTx(u64::from_le_bytes(bytes.try_into().unwrap())))
-    }
-}
-
-pub struct TestMempoolApp;
-impl MempoolApp for TestMempoolApp {
-    fn check_tx(&self, _tx: &RawTx) -> AppResult<CheckTxOutcome> {
-        Ok(CheckTxOutcome)
-    }
-}
+use crate::{
+    app::{TestMempoolApp, TestTx},
+    config::HostMempoolConfig,
+    rpc::{Rpc, RpcMsg},
+};
 
 pub struct TestNode {
     pub id: usize,
+    pub rpc: Rpc,
+    pub rpc_actor: ActorRef<RpcMsg>,
     pub mempool_actor: ActorRef<Msg>,
 }
 
@@ -68,29 +54,14 @@ impl TestNode {
         )
         .await;
 
-        Self { id, mempool_actor }
-    }
+        let rpc = Rpc::new(mempool_actor.clone());
+        let rpc_actor = Rpc::spawn(rpc.clone()).await.unwrap();
 
-    pub async fn add_tx(&mut self, tx: TestTx) {
-        let raw_tx = tx.serialize();
-        let tx_hash = raw_tx.hash();
-
-        // Send add message to the mempool actor using RPC call
-        let result = self
-            .mempool_actor
-            .call(|reply| Msg::Add { tx: raw_tx, reply }, None)
-            .await;
-
-        if result.is_ok() {
-            println!(
-                "Node {} added transaction {} with hash {}",
-                self.id, tx.0, tx_hash
-            );
-        } else {
-            println!(
-                "Node {} failed to add transaction {}: {:?}",
-                self.id, tx.0, result
-            );
+        Self {
+            id,
+            mempool_actor,
+            rpc_actor,
+            rpc,
         }
     }
 

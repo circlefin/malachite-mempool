@@ -1,13 +1,54 @@
 use crate::utils::create_nodes;
-use host_integration::node::TestTx;
+use host_integration::app::{TestCheckTxOutcome, TestTx};
 use std::time::Duration;
 use tokio::time::sleep;
 
 pub mod utils;
 
 #[tokio::test]
+async fn test_mempool_error_handling() {
+    // Initialize logging
+    let _ = tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .try_init();
+
+    println!("Testing mempool error handling with transparent App variant...");
+
+    let mut nodes = create_nodes(1, 9000).await;
+    let node = &mut nodes[0];
+
+    let good_tx = TestTx(1001);
+    let bad_tx = TestTx(9999);
+
+    node.rpc
+        .add_tx(&node.rpc_actor, good_tx.clone())
+        .await
+        .unwrap();
+    let state = node.rpc.get_state(&node.rpc_actor).await.unwrap();
+    assert_eq!(state, Some(TestCheckTxOutcome::Success(good_tx.hash())));
+
+    node.rpc
+        .add_tx(&node.rpc_actor, bad_tx.clone())
+        .await
+        .unwrap();
+    let state = node.rpc.get_state(&node.rpc_actor).await.unwrap();
+    assert_eq!(
+        state,
+        Some(TestCheckTxOutcome::Error(
+            bad_tx.hash(),
+            "Transaction validation failed".to_string()
+        ))
+    );
+}
+
+#[tokio::test]
 async fn test_three_node_gossip_and_removal() {
     println!("Starting three-node tx gossip and removal test with actors...");
+
+    // Initialize logging
+    let _ = tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .try_init();
 
     let mut nodes = create_nodes(3, 8000).await;
 
@@ -21,9 +62,21 @@ async fn test_three_node_gossip_and_removal() {
     let tx2 = TestTx(1002);
     let tx3 = TestTx(1003);
 
-    nodes[0].add_tx(tx1.clone()).await;
-    nodes[1].add_tx(tx2.clone()).await;
-    nodes[2].add_tx(tx3.clone()).await;
+    nodes[0]
+        .rpc
+        .add_tx(&nodes[0].rpc_actor, tx1.clone())
+        .await
+        .unwrap();
+    nodes[1]
+        .rpc
+        .add_tx(&nodes[1].rpc_actor, tx2.clone())
+        .await
+        .unwrap();
+    nodes[2]
+        .rpc
+        .add_tx(&nodes[2].rpc_actor, tx3.clone())
+        .await
+        .unwrap();
 
     // Wait for transactions to be processed and gossiped
     sleep(Duration::from_millis(200)).await;

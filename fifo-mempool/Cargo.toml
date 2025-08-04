@@ -14,7 +14,6 @@ serde_json = { workspace = true }
 rand = { workspace = true }
 tokio = { workspace = true }
 libp2p-identity = { workspace = true }
-malachitebft-engine = { workspace = true }
 malachitebft-metrics = { workspace = true }
 malachitebft-test-mempool = { workspace = true }
 libp2p-network = { path = "../libp2p-network" }
