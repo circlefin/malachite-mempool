@@ -34,4 +34,3 @@ sha2 = "0.10"
 malachitebft-config = { package = "informalsystems-malachitebft-config", path = "../malachite/code/crates/config" }
 malachitebft-metrics = { package = "informalsystems-malachitebft-metrics", path = "../malachite/code/crates/metrics" }
 malachitebft-proto = { version = "0.5.0", package = "informalsystems-malachitebft-proto", path = "../malachite/code/crates/proto" }
-malachitebft-test-mempool = { package = "informalsystems-malachitebft-test-mempool", path = "../malachite/code/crates/test/mempool" }

@@ -9,7 +9,6 @@ thiserror = { workspace = true }
 rand = { workspace = true }
 libp2p-identity = { workspace = true }
 
-malachitebft-test-mempool = { workspace = true }
 async-trait = { workspace = true } 
 
 malachitebft-metrics = { workspace = true }

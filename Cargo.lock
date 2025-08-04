@@ -1626,25 +1626,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "informalsystems-malachitebft-test-mempool"
-version = "0.5.0"
-dependencies = [
- "eyre",
- "futures",
- "informalsystems-malachitebft-metrics",
- "informalsystems-malachitebft-proto",
- "libp2p",
- "libp2p-gossipsub",
- "prost",
- "prost-build",
- "prost-types",
- "protox",
- "seahash",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "inout"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1966,7 +1947,6 @@ dependencies = [
  "futures",
  "informalsystems-malachitebft-metrics",
  "informalsystems-malachitebft-proto",
- "informalsystems-malachitebft-test-mempool",
  "libp2p",
  "libp2p-gossipsub",
  "libp2p-identity",
