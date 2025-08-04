@@ -1,22 +1,25 @@
-use crate::output_port::{OutputPort, OutputPortSubscriber};
+use libp2p::PeerId;
 
+use crate::{
+    handle::CtrlHandle,
+    output_port::{OutputPort, OutputPortSubscriber},
+};
+
+use crate::msg::NetworkMsg as GossipNetworkMsg;
+use crate::types::MempoolTransactionBatch;
+use crate::Event;
 use {
     libp2p_identity::Keypair,
     malachitebft_metrics::SharedRegistry,
-    malachitebft_test_mempool::{
-        handle::CtrlHandle, types::MempoolTransactionBatch, Channel::Mempool, Event, PeerId,
-    },
     ractor::{Actor, ActorProcessingErr, ActorRef},
     std::{collections::BTreeSet, sync::Arc},
     tokio::task::JoinHandle,
-    tracing::{error, info},
+    tracing::error,
 };
 
-pub use malachitebft_test_mempool::{
-    Config as MempoolNetworkConfig, NetworkMsg as GossipNetworkMsg,
-};
 pub type MempoolNetworkMsg = Msg;
 pub type MempoolNetworkActorRef = ActorRef<Msg>;
+pub type MempoolNetworkConfig = crate::Config;
 
 pub struct Args {
     pub keypair: Keypair,
@@ -40,9 +43,6 @@ pub enum Msg {
 
     /// Broadcast a message to all peers
     Broadcast(MempoolTransactionBatch),
-
-    /// Connect to a specific peer
-    Connect(libp2p::Multiaddr),
 
     // Internal message
     #[doc(hidden)]
@@ -78,8 +78,7 @@ impl Actor for MempoolNetwork {
         myself: ActorRef<Msg>,
         args: Args,
     ) -> Result<State, ActorProcessingErr> {
-        let handle =
-            malachitebft_test_mempool::spawn(args.keypair, args.config, args.metrics).await?;
+        let handle = crate::spawn(args.keypair, args.config, args.metrics).await?;
         let (mut recv_handle, ctrl_handle) = handle.split();
 
         let recv_task = tokio::spawn(async move {
@@ -130,19 +129,14 @@ impl Actor for MempoolNetwork {
             Msg::Broadcast(batch) => {
                 match GossipNetworkMsg::TransactionBatch(batch).to_network_bytes() {
                     Ok(bytes) => {
-                        ctrl_handle.broadcast(Mempool, bytes).await?;
+                        ctrl_handle
+                            .broadcast(crate::Channel::Mempool, bytes)
+                            .await?;
                     }
                     Err(e) => {
                         error!("Failed to serialize transaction batch: {e}");
                     }
                 }
-            }
-
-            Msg::Connect(addr) => {
-                info!("Attempting to connect to peer at {}", addr);
-                // The persistent_peers configuration should handle connections automatically
-                // This is just for explicit connection requests
-                info!("Connection request received for peer at {}", addr);
             }
 
             Msg::NewEvent(event) => {

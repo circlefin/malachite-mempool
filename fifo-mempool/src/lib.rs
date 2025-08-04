@@ -3,9 +3,6 @@ use std::sync::Arc;
 pub mod mempool;
 pub mod types;
 
-pub use libp2p_network::{
-    GossipNetworkMsg, MempoolNetwork, MempoolNetworkActorRef, MempoolNetworkMsg,
-};
 pub use mempool::*;
 pub use types::tx::{RawTx, TxHash};
 

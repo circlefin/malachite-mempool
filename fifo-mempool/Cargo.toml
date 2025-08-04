@@ -15,7 +15,6 @@ rand = { workspace = true }
 tokio = { workspace = true }
 libp2p-identity = { workspace = true }
 malachitebft-metrics = { workspace = true }
-malachitebft-test-mempool = { workspace = true }
 libp2p-network = { path = "../libp2p-network" }
 futures = { workspace = true }
 prometheus = { workspace = true }

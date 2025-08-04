@@ -3,7 +3,7 @@ use fifo_mempool::{
     RawTx,
 };
 use libp2p_identity::Keypair;
-use libp2p_network::spawn_mempool_network_actor;
+use libp2p_network::{network::spawn_mempool_network_actor, MempoolNetworkConfig};
 use malachitebft_metrics::SharedRegistry;
 use prometheus_client::registry::Registry;
 use ractor::ActorRef;
@@ -26,7 +26,7 @@ impl TestNode {
     pub async fn new(id: usize, config: HostMempoolConfig) -> Self {
         let app = Arc::new(TestMempoolApp);
 
-        let network_config = malachitebft_test_mempool::Config {
+        let network_config = MempoolNetworkConfig {
             listen_addr: config.p2p.listen_addr,
             persistent_peers: config.p2p.persistent_peers,
             idle_connection_timeout: config.idle_connection_timeout,

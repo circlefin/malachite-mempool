@@ -11,11 +11,11 @@ use {
 };
 
 // Placeholder types for external dependencies
-pub type NetworkEvent = malachitebft_test_mempool::Event;
-pub type GossipNetworkMsg = malachitebft_test_mempool::NetworkMsg;
+pub type NetworkEvent = libp2p_network::Event;
+pub type GossipNetworkMsg = libp2p_network::NetworkMsg;
 pub type MempoolNetworkActorRef = ActorRef<libp2p_network::Msg>;
 pub type MempoolNetworkMsg = libp2p_network::Msg;
-pub type MempoolTransactionBatch = malachitebft_test_mempool::types::MempoolTransactionBatch;
+pub type MempoolTransactionBatch = libp2p_network::types::MempoolTransactionBatch;
 pub type MempoolAppRef = Arc<dyn MempoolApp>;
 
 // Placeholder for MempoolConfig
@@ -271,7 +271,7 @@ impl Mempool {
         // Note: This is a cast since we don't need a reply for gossip
         if let Err(e) = self
             .mempool_network
-            .cast(libp2p_network::Msg::Broadcast(batch))
+            .cast(MempoolNetworkMsg::Broadcast(batch))
         {
             error!("Failed to gossip transaction: {:?}", e);
         } else {

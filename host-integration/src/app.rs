@@ -16,7 +16,7 @@ impl TestTx {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum TestCheckTxOutcome {
     Success(TxHash),
     Error(TxHash, String),
