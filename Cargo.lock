@@ -1571,6 +1571,8 @@ dependencies = [
 [[package]]
 name = "informalsystems-malachitebft-config"
 version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d90c917fc17d7f1505b64fef02c251f3b9409dd6df10bc4bdbdb216cef60f32"
 dependencies = [
  "bytesize",
  "config",
@@ -1583,6 +1585,8 @@ dependencies = [
 [[package]]
 name = "informalsystems-malachitebft-core-state-machine"
 version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e60a5770c3dd3d342a07481cbe0db8080b4966af59fde17212f19e324a5ccbbe"
 dependencies = [
  "derive-where",
  "displaydoc",
@@ -1592,6 +1596,8 @@ dependencies = [
 [[package]]
 name = "informalsystems-malachitebft-core-types"
 version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14b42a90f82e60414ea29e79f96ff28a2eebf1b10f3107ab42208f049be33f9c"
 dependencies = [
  "bytes",
  "derive-where",
@@ -1602,6 +1608,8 @@ dependencies = [
 [[package]]
 name = "informalsystems-malachitebft-metrics"
 version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "508750b3dc4ca64defb9eb726e0c44e3faa854c3218a1ac26301bc4e47a6f472"
 dependencies = [
  "informalsystems-malachitebft-core-state-machine",
  "prometheus-client",
@@ -1610,6 +1618,8 @@ dependencies = [
 [[package]]
 name = "informalsystems-malachitebft-peer"
 version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da31c9d74b9013c19015f7421cecc041a0b42d6b57ffcd07e4eb246738bfee32"
 dependencies = [
  "bs58",
  "multihash",
@@ -1619,6 +1629,8 @@ dependencies = [
 [[package]]
 name = "informalsystems-malachitebft-proto"
 version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68f2cb4bd1cd225dd250076368e5d5b2d15394e4e47dab9da45e32f010cbaba5"
 dependencies = [
  "prost",
  "prost-types",
