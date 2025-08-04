@@ -4,21 +4,21 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ractor = { workspace = true }
-thiserror = { workspace = true }
-tracing = { workspace = true }
-prost-types = { workspace = true }
-prost = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-rand = { workspace = true }
-tokio = { workspace = true }
-libp2p-identity = { workspace = true }
-malachitebft-metrics = { workspace = true }
-libp2p-network = { path = "../libp2p-network" }
+anyhow = { workspace = true }
 futures = { workspace = true }
+libp2p = { workspace = true }
+libp2p-identity = { workspace = true }
+libp2p-network = { path = "../libp2p-network" }
+malachitebft-metrics = { workspace = true }
 prometheus = { workspace = true }
 prometheus-client = { workspace = true }
-libp2p = { workspace = true }
+prost = { workspace = true }
+prost-types = { workspace = true }
+ractor = { workspace = true }
+rand = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 sha2 = { workspace = true }
-anyhow = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }

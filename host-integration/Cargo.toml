@@ -8,12 +8,13 @@ name = "host_integration"
 path = "src/lib.rs"
 
 [dependencies]
+anyhow = { workspace = true }
 bytesize = { workspace = true }
 eyre = { workspace = true }
 fifo-mempool = { path = "../fifo-mempool" }
-libp2p-network = { path = "../libp2p-network" }
 libp2p = { workspace = true }
 libp2p-identity = { workspace = true }
+libp2p-network = { path = "../libp2p-network" }
 malachitebft-config = { workspace = true }
 malachitebft-metrics = { workspace = true }
 prometheus-client = { workspace = true }
@@ -22,6 +23,5 @@ ractor = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
-anyhow = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
