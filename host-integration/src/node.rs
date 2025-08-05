@@ -10,7 +10,7 @@ use ractor::ActorRef;
 use std::sync::Arc;
 
 use crate::{
-    app::{TestMempoolApp, TestTx},
+    app::{spawn_app_actor, TestMempoolApp, TestTx},
     config::HostMempoolConfig,
     rpc::{Rpc, RpcMsg},
 };
@@ -25,6 +25,9 @@ pub struct TestNode {
 impl TestNode {
     pub async fn new(id: usize, config: HostMempoolConfig) -> Self {
         let app = Arc::new(TestMempoolApp);
+
+        // Create app actor
+        let app_actor = spawn_app_actor(app).await;
 
         let network_config = MempoolNetworkConfig {
             listen_addr: config.p2p.listen_addr,
@@ -48,7 +51,7 @@ impl TestNode {
 
         let mempool_actor = spawn_mempool_actor(
             network_actor.clone(),
-            app,
+            app_actor,
             tracing::Span::current(),
             &mempool_config,
         )

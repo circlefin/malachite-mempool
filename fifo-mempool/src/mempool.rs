@@ -1,5 +1,5 @@
 use {
-    crate::{types::tx::TxHash, ActorResult, MempoolApp, RawTx},
+    crate::{types::tx::TxHash, ActorResult, RawTx},
     ractor::{Actor, ActorRef, RpcReplyPort},
     std::{
         cmp::min,
@@ -25,10 +25,10 @@ pub type MempoolNetworkMsg = libp2p_network::Msg;
 pub type MempoolTransactionBatch = libp2p_network::types::MempoolTransactionBatch;
 
 // Reference to the MempoolApp actor
-pub type MempoolAppRef = Arc<dyn MempoolApp>;
+pub type MempoolAppActorRef = ActorRef<MempoolAppMsg>;
 
 // Actor reference to the gossip network
-pub type MempoolNetworkActorRef = ActorRef<libp2p_network::Msg>;
+pub type MempoolNetworkActorRef = ActorRef<MempoolNetworkMsg>;
 
 // MempoolConfig, used to configure the mempool
 #[derive(Clone, Debug)]
@@ -61,6 +61,13 @@ impl State {
     }
 }
 
+pub enum MempoolAppMsg {
+    CheckTx {
+        tx: RawTx,
+        reply: RpcReplyPort<Result<Box<dyn crate::CheckTxOutcome>, MempoolError>>,
+    },
+}
+
 pub enum Msg {
     NetworkEvent(Arc<GossipNetworkEvent>),
     Add {
@@ -88,7 +95,7 @@ impl From<Arc<GossipNetworkEvent>> for Msg {
 #[allow(dead_code)]
 pub struct Mempool {
     mempool_network: MempoolNetworkActorRef,
-    app: MempoolAppRef,
+    app: MempoolAppActorRef,
     span: Span,
     config: MempoolConfig,
 }
@@ -96,7 +103,7 @@ pub struct Mempool {
 impl Mempool {
     pub async fn spawn(
         mempool_network: MempoolNetworkActorRef,
-        app: MempoolAppRef,
+        app: MempoolAppActorRef,
         span: Span,
         config: MempoolConfig,
     ) -> Result<MempoolActorRef, ractor::SpawnErr> {
@@ -111,10 +118,15 @@ impl Mempool {
         Ok(actor_ref)
     }
 
-    fn handle_msg(&self, msg: Msg, state: &mut State) -> ActorResult<()> {
+    async fn handle_msg(
+        &self,
+        myself: &MempoolActorRef,
+        msg: Msg,
+        state: &mut State,
+    ) -> ActorResult<()> {
         match msg {
-            Msg::NetworkEvent(event) => self.handle_network_event(&event, state)?,
-            Msg::Add { tx, reply } => self.add_tx(tx, Some(reply), state)?,
+            Msg::NetworkEvent(event) => self.handle_network_event(myself, &event, state).await?,
+            Msg::Add { tx, reply } => self.add_tx(myself, tx, Some(reply), state).await?,
             Msg::CheckTxResult { tx, result, reply } => {
                 self.handle_check_tx_result(tx, result, reply, state)?
             }
@@ -125,8 +137,9 @@ impl Mempool {
         Ok(())
     }
 
-    fn handle_network_event(
+    async fn handle_network_event(
         &self,
+        myself: &MempoolActorRef,
         event: &GossipNetworkEvent,
         state: &mut State,
     ) -> ActorResult<()> {
@@ -134,8 +147,11 @@ impl Mempool {
         debug!("Received network event: {:?}", event);
 
         match event {
-            GossipNetworkEvent::Message(.., network_msg) => {
-                self.handle_network_msg(network_msg, state)?;
+            GossipNetworkEvent::Message(.., GossipNetworkMsg::TransactionBatch(batch)) => {
+                let tx = RawTx(prost::bytes::Bytes::from(
+                    batch.transaction_batch.value.clone(),
+                ));
+                self.add_tx(myself, tx, None, state).await?
             }
             e => info!("Network event: {:?}", e),
         }
@@ -143,22 +159,10 @@ impl Mempool {
         Ok(())
     }
 
-    #[allow(dead_code)]
-    #[tracing::instrument("handle_network_msg", skip_all)]
-    fn handle_network_msg(&self, msg: &GossipNetworkMsg, state: &mut State) -> ActorResult<()> {
-        match msg {
-            GossipNetworkMsg::TransactionBatch(batch) => {
-                let tx = RawTx(prost::bytes::Bytes::from(
-                    batch.transaction_batch.value.clone(),
-                ));
-                self.add_tx(tx, None, state)
-            }
-        }
-    }
-
     #[tracing::instrument("add_tx", skip_all)]
-    fn add_tx(
+    async fn add_tx(
         &self,
+        myself: &MempoolActorRef,
         tx: RawTx,
         reply: Option<RpcReplyPort<Result<Box<dyn crate::CheckTxOutcome>, MempoolError>>>,
         state: &mut State,
@@ -173,13 +177,17 @@ impl Mempool {
             return Ok(());
         }
 
-        // Instead of calling check_tx directly, simulate sending a message to the app
-        // In a real implementation, this would be an async message to the app actor
-        let check_tx_outcome = self.app.check_tx(&tx);
-
-        // Simulate the message passing by immediately handling the result
-        // In a real implementation, this would be handled by a separate CheckTxResult message
-        self.handle_check_tx_result(tx, check_tx_outcome, reply, state)?;
+        let tx_clone = tx.clone();
+        self.app.call_and_forward(
+            |reply| MempoolAppMsg::CheckTx { tx, reply },
+            myself,
+            move |outcome| Msg::CheckTxResult {
+                tx: tx_clone.clone(),
+                result: outcome.map_err(|e| e.into()),
+                reply,
+            },
+            None,
+        )?;
 
         Ok(())
     }
@@ -316,11 +324,11 @@ impl Actor for Mempool {
     #[tracing::instrument("mempool", parent = &self.span, skip_all)]
     async fn handle(
         &self,
-        _myself: MempoolActorRef,
+        myself: MempoolActorRef,
         msg: MempoolMsg,
         state: &mut State,
     ) -> ActorResult<()> {
-        if let Err(e) = self.handle_msg(msg, state) {
+        if let Err(e) = self.handle_msg(&myself, msg, state).await {
             error!("Error handling message: {:?}", e);
         }
 
@@ -339,7 +347,7 @@ pub enum MempoolError {
 
 pub async fn spawn_mempool_actor(
     mempool_network: MempoolNetworkActorRef,
-    app: Arc<dyn MempoolApp>,
+    app: MempoolAppActorRef,
     span: Span,
     config: &MempoolConfig,
 ) -> MempoolActorRef {

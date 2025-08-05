@@ -1,5 +1,9 @@
-use fifo_mempool::{AppResult, CheckTxOutcome, MempoolApp, RawTx, TxHash};
+use fifo_mempool::{
+    ActorResult, AppResult, CheckTxOutcome, MempoolApp, MempoolAppMsg, RawTx, TxHash,
+};
 use prost::bytes::Bytes;
+use ractor::{Actor, ActorRef};
+use std::sync::Arc;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TestTx(pub u64); // Unique transaction by id
@@ -32,6 +36,51 @@ impl CheckTxOutcome for TestCheckTxOutcome {
             TestCheckTxOutcome::Error(hash, _) => hash.clone(),
         }
     }
+}
+
+pub struct TestMempoolAppActor {
+    app: Arc<TestMempoolApp>,
+}
+
+impl TestMempoolAppActor {
+    pub async fn spawn(app: Arc<TestMempoolApp>) -> ActorRef<MempoolAppMsg> {
+        let actor = Self { app };
+        let (actor_ref, _) = Actor::spawn(None, actor, ()).await.unwrap();
+        actor_ref
+    }
+}
+
+impl Actor for TestMempoolAppActor {
+    type Arguments = ();
+    type Msg = MempoolAppMsg;
+    type State = ();
+
+    async fn pre_start(
+        &self,
+        _myself: ActorRef<Self::Msg>,
+        _args: Self::Arguments,
+    ) -> ActorResult<Self::State> {
+        Ok(())
+    }
+
+    async fn handle(
+        &self,
+        _myself: ActorRef<Self::Msg>,
+        msg: Self::Msg,
+        _state: &mut Self::State,
+    ) -> ActorResult<()> {
+        match msg {
+            MempoolAppMsg::CheckTx { tx, reply } => {
+                let result = self.app.check_tx(&tx);
+                reply.send(result.map_err(|e| fifo_mempool::MempoolError::App(e.to_string())))?;
+            }
+        }
+        Ok(())
+    }
+}
+
+pub async fn spawn_app_actor(app: Arc<TestMempoolApp>) -> ActorRef<MempoolAppMsg> {
+    TestMempoolAppActor::spawn(app).await
 }
 pub struct TestMempoolApp;
 impl MempoolApp for TestMempoolApp {
