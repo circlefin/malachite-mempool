@@ -7,7 +7,6 @@ pub mod utils;
 
 #[tokio::test]
 async fn test_mempool_error_handling() {
-
     let _ = tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
         .try_init();

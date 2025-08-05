@@ -886,9 +886,7 @@ dependencies = [
  "prost",
  "prost-types",
  "ractor",
- "rand 0.8.5",
  "serde",
- "serde_json",
  "sha2",
  "thiserror 2.0.12",
  "tokio",
@@ -1282,7 +1280,6 @@ dependencies = [
  "prost",
  "ractor",
  "serde",
- "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -1967,7 +1964,6 @@ dependencies = [
  "prost-types",
  "protox",
  "ractor",
- "rand 0.8.5",
  "seahash",
  "thiserror 2.0.12",
  "tokio",
@@ -3307,12 +3303,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ryu"
-version = "1.0.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28d3b2b1366ec20994f1fd18c3c594f05c5dd4bc44d8bb0c1c632c8d6829481f"
-
-[[package]]
 name = "scoped-tls"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3368,18 +3358,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "serde_json"
-version = "1.0.142"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "030fedb782600dcbd6f02d479bf0d817ac3bb40d644745b769d6a96bc3afc5a7"
-dependencies = [
- "itoa",
- "memchr",
- "ryu",
- "serde",
 ]
 
 [[package]]

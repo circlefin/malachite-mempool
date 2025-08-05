@@ -92,7 +92,6 @@ impl From<Arc<GossipNetworkEvent>> for Msg {
     }
 }
 
-#[allow(dead_code)]
 pub struct Mempool {
     mempool_network: MempoolNetworkActorRef,
     app: MempoolAppActorRef,

@@ -1,12 +1,9 @@
-use std::sync::Arc;
-
 pub mod mempool;
 pub mod types;
 
 pub use mempool::*;
 pub use types::tx::{RawTx, TxHash};
 
-pub type MempoolAppRef = Arc<dyn MempoolApp>;
 pub type ActorResult<T> = Result<T, ractor::ActorProcessingErr>;
 
 // Generic error type - applications should define their own error types

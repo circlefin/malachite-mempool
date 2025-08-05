@@ -103,7 +103,3 @@ impl Actor for Rpc {
         Ok(())
     }
 }
-
-pub async fn spawn_rpc_actor(rpc: Rpc) -> ActorRef<RpcMsg> {
-    Rpc::spawn(rpc).await.unwrap()
-}

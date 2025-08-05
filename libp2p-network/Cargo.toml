@@ -15,7 +15,6 @@ malachitebft-proto = { workspace = true }
 prost = { workspace = true }
 prost-types = { workspace = true }
 ractor = { workspace = true }
-rand = { workspace = true }
 seahash = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
