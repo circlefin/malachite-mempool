@@ -1,4 +1,5 @@
 use libp2p::PeerId;
+use ractor::async_trait;
 
 use crate::{
     handle::CtrlHandle,
@@ -68,6 +69,7 @@ impl MempoolNetwork {
     }
 }
 
+#[async_trait]
 impl Actor for MempoolNetwork {
     type Arguments = Args;
     type Msg = Msg;

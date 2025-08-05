@@ -2,7 +2,7 @@ use fifo_mempool::{
     ActorResult, AppResult, CheckTxOutcome, MempoolApp, MempoolAppMsg, RawTx, TxHash,
 };
 use prost::bytes::Bytes;
-use ractor::{Actor, ActorRef};
+use ractor::{async_trait, Actor, ActorRef};
 use std::sync::Arc;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -50,6 +50,7 @@ impl TestMempoolAppActor {
     }
 }
 
+#[async_trait]
 impl Actor for TestMempoolAppActor {
     type Arguments = ();
     type Msg = MempoolAppMsg;

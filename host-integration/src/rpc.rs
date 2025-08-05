@@ -1,7 +1,7 @@
 use eyre::eyre;
 
 use fifo_mempool::{ActorResult, Msg as MempoolMsg};
-use ractor::{Actor, ActorProcessingErr, ActorRef};
+use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
 
 use crate::app::{TestCheckTxOutcome, TestTx};
 
@@ -71,6 +71,7 @@ impl Rpc {
     }
 }
 
+#[async_trait]
 impl Actor for Rpc {
     type Arguments = ();
     type Msg = RpcMsg;

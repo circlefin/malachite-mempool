@@ -8,7 +8,7 @@ resolver = "2"
 
 [workspace.dependencies]
 anyhow = "1.0"
-async-trait = "0.1"
+async-trait = "0.1.88"
 bytesize = "1.0"
 eyre = "0.6"
 futures = "0.3"
@@ -24,7 +24,7 @@ prost = "0.13"
 prost-build = "0.13"
 prost-types = "0.13"
 protox = "0.8.0"
-ractor = "0.14.6"
+ractor = { version = "0.14.6", default-features = false, features = ["async-trait", "tokio_runtime"] }
 seahash            = "4.1"
 serde = "1.0"
 sha2 = "0.10"

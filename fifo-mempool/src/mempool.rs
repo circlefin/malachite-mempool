@@ -1,6 +1,6 @@
 use {
     crate::{types::tx::TxHash, ActorResult, RawTx},
-    ractor::{Actor, ActorRef, RpcReplyPort},
+    ractor::{async_trait, Actor, ActorRef, RpcReplyPort},
     std::{
         cmp::min,
         collections::{HashMap, HashSet, VecDeque},
@@ -302,6 +302,7 @@ impl Mempool {
     }
 }
 
+#[async_trait]
 impl Actor for Mempool {
     type Arguments = ();
     type Msg = Msg;

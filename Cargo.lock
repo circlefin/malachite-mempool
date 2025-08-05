@@ -3025,6 +3025,7 @@ version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d65972a0286ef14c43c6daafbac6cf15e96496446147683b2905292c35cc178"
 dependencies = [
+ "async-trait",
  "bon",
  "dashmap",
  "futures",
