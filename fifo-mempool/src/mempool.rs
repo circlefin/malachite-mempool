@@ -11,14 +11,26 @@ use {
 };
 
 // Placeholder types for external dependencies
-pub type NetworkEvent = libp2p_network::Event;
+
+// Events emitted by the gossip network
+pub type GossipNetworkEvent = libp2p_network::Event;
+
+// Messages included in GossipNetworkEvent::Message event
 pub type GossipNetworkMsg = libp2p_network::NetworkMsg;
-pub type MempoolNetworkActorRef = ActorRef<libp2p_network::Msg>;
+
+// Messages that can be sent to the gossip network
 pub type MempoolNetworkMsg = libp2p_network::Msg;
+
+// Transaction batch type, can be sent or received by the gossip network
 pub type MempoolTransactionBatch = libp2p_network::types::MempoolTransactionBatch;
+
+// Reference to the MempoolApp actor
 pub type MempoolAppRef = Arc<dyn MempoolApp>;
 
-// Placeholder for MempoolConfig
+// Actor reference to the gossip network
+pub type MempoolNetworkActorRef = ActorRef<libp2p_network::Msg>;
+
+// MempoolConfig, used to configure the mempool
 #[derive(Clone, Debug)]
 pub struct MempoolConfig {
     pub max_txs_bytes: u64,
@@ -50,7 +62,7 @@ impl State {
 }
 
 pub enum Msg {
-    NetworkEvent(Arc<NetworkEvent>),
+    NetworkEvent(Arc<GossipNetworkEvent>),
     Add {
         tx: RawTx,
         reply: RpcReplyPort<Result<Box<dyn crate::CheckTxOutcome>, MempoolError>>,
@@ -67,8 +79,8 @@ pub enum Msg {
     Remove(Vec<RawTx>),
 }
 
-impl From<Arc<NetworkEvent>> for Msg {
-    fn from(event: Arc<NetworkEvent>) -> Self {
+impl From<Arc<GossipNetworkEvent>> for Msg {
+    fn from(event: Arc<GossipNetworkEvent>) -> Self {
         Self::NetworkEvent(event)
     }
 }
@@ -79,8 +91,6 @@ pub struct Mempool {
     app: MempoolAppRef,
     span: Span,
     config: MempoolConfig,
-    /// The maximum average number of transactions that can be taken from the mempool.
-    max_txs_per_block: usize,
 }
 
 impl Mempool {
@@ -94,7 +104,6 @@ impl Mempool {
             mempool_network,
             app,
             span,
-            max_txs_per_block: config.max_txs_per_block,
             config,
         };
 
@@ -116,12 +125,16 @@ impl Mempool {
         Ok(())
     }
 
-    fn handle_network_event(&self, event: &NetworkEvent, state: &mut State) -> ActorResult<()> {
+    fn handle_network_event(
+        &self,
+        event: &GossipNetworkEvent,
+        state: &mut State,
+    ) -> ActorResult<()> {
         // Handle network events from the gossip network
         debug!("Received network event: {:?}", event);
 
         match event {
-            NetworkEvent::Message(.., network_msg) => {
+            GossipNetworkEvent::Message(.., network_msg) => {
                 self.handle_network_msg(network_msg, state)?;
             }
             e => info!("Network event: {:?}", e),
@@ -207,7 +220,7 @@ impl Mempool {
     }
 
     fn take(&self, state: &mut State, reply: RpcReplyPort<Vec<RawTx>>) -> ActorResult<()> {
-        let mut txs = Vec::with_capacity(min(self.max_txs_per_block, state.txs.len()));
+        let mut txs = Vec::with_capacity(min(self.config.max_txs_per_block, state.txs.len()));
 
         let mut max_tx_bytes = self.config.max_txs_bytes as usize;
 
