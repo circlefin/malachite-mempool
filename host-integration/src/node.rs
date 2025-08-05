@@ -51,7 +51,7 @@ impl TestNode {
 
         let mempool_actor = spawn_mempool_actor(
             network_actor.clone(),
-            app_actor,
+            Some(app_actor),
             tracing::Span::current(),
             &mempool_config,
         )
@@ -72,7 +72,7 @@ impl TestNode {
         // Send remove message to the mempool actor using cast (non-RPC)
         let raw_tx = tx.serialize();
         let tx_hash = raw_tx.hash();
-        let result = self.mempool_actor.cast(Msg::Remove(vec![raw_tx]));
+        let result = self.mempool_actor.cast(Msg::Remove(vec![tx_hash.clone()]));
         if result.is_ok() {
             println!(
                 "Node {} removed transaction {} with hash {}",

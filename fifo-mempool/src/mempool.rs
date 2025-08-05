@@ -1,6 +1,8 @@
 use {
     crate::{types::tx::TxHash, ActorResult, RawTx},
     ractor::{async_trait, Actor, ActorRef, RpcReplyPort},
+    serde::Deserialize,
+    serde::Serialize,
     std::{
         cmp::min,
         collections::{HashMap, HashSet, VecDeque},
@@ -31,7 +33,7 @@ pub type MempoolAppActorRef = ActorRef<MempoolAppMsg>;
 pub type MempoolNetworkActorRef = ActorRef<MempoolNetworkMsg>;
 
 // MempoolConfig, used to configure the mempool
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MempoolConfig {
     pub max_txs_bytes: u64,
     pub max_txs_per_block: usize,
@@ -83,7 +85,7 @@ pub enum Msg {
     Take {
         reply: RpcReplyPort<Vec<RawTx>>,
     },
-    Remove(Vec<RawTx>),
+    Remove(Vec<TxHash>),
 }
 
 impl From<Arc<GossipNetworkEvent>> for Msg {
@@ -94,7 +96,7 @@ impl From<Arc<GossipNetworkEvent>> for Msg {
 
 pub struct Mempool {
     mempool_network: MempoolNetworkActorRef,
-    app: MempoolAppActorRef,
+    app: Option<MempoolAppActorRef>,
     span: Span,
     config: MempoolConfig,
 }
@@ -102,7 +104,7 @@ pub struct Mempool {
 impl Mempool {
     pub async fn spawn(
         mempool_network: MempoolNetworkActorRef,
-        app: MempoolAppActorRef,
+        app: Option<MempoolAppActorRef>,
         span: Span,
         config: MempoolConfig,
     ) -> Result<MempoolActorRef, ractor::SpawnErr> {
@@ -176,17 +178,49 @@ impl Mempool {
             return Ok(());
         }
 
-        let tx_clone = tx.clone();
-        self.app.call_and_forward(
-            |reply| MempoolAppMsg::CheckTx { tx, reply },
-            myself,
-            move |outcome| Msg::CheckTxResult {
-                tx: tx_clone.clone(),
-                result: outcome.map_err(|e| e.into()),
-                reply,
-            },
-            None,
-        )?;
+        match &self.app {
+            Some(app) => {
+                let tx_clone = tx.clone();
+                app.call_and_forward(
+                    |reply| MempoolAppMsg::CheckTx { tx, reply },
+                    myself,
+                    move |outcome| Msg::CheckTxResult {
+                        tx: tx_clone.clone(),
+                        result: outcome.map_err(|e| e.into()),
+                        reply,
+                    },
+                    None,
+                )?;
+            }
+            None => {
+                // No app configured, treat as valid and add directly to mempool
+                debug!("No app configured, treating tx as valid, adding tx to mempool");
+                let tx_hash = tx.hash();
+                state.tx_hashes.insert(tx_hash.clone(), state.txs.len());
+                state.txs.push_back(tx.clone());
+                self.gossip_tx(tx)?;
+
+                if let Some(reply) = reply {
+                    // Create a simple success outcome
+                    use crate::types::tx::TxHash;
+                    use crate::CheckTxOutcome;
+
+                    #[derive(Debug)]
+                    struct SimpleSuccess(TxHash);
+
+                    impl CheckTxOutcome for SimpleSuccess {
+                        fn is_valid(&self) -> bool {
+                            true
+                        }
+                        fn hash(&self) -> TxHash {
+                            self.0.clone()
+                        }
+                    }
+
+                    reply.send(Ok(Box::new(SimpleSuccess(tx_hash))))?;
+                }
+            }
+        }
 
         Ok(())
     }
@@ -250,10 +284,10 @@ impl Mempool {
     }
 
     #[tracing::instrument("remove", skip_all)]
-    fn remove(&self, txs: Vec<RawTx>, state: &mut State) -> ActorResult<()> {
+    fn remove(&self, tx_hashes: Vec<TxHash>, state: &mut State) -> ActorResult<()> {
         let mut ignore = HashSet::new();
-        for tx in txs {
-            if let Some(index) = state.tx_hashes.remove(&tx.hash()) {
+        for tx_hash in tx_hashes {
+            if let Some(index) = state.tx_hashes.remove(&tx_hash) {
                 ignore.insert(index);
             }
         }
@@ -347,7 +381,7 @@ pub enum MempoolError {
 
 pub async fn spawn_mempool_actor(
     mempool_network: MempoolNetworkActorRef,
-    app: MempoolAppActorRef,
+    app: Option<MempoolAppActorRef>,
     span: Span,
     config: &MempoolConfig,
 ) -> MempoolActorRef {
