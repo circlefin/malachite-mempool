@@ -1574,7 +1574,7 @@ dependencies = [
  "bytesize",
  "config",
  "humantime-serde",
- "informalsystems-malachitebft-core-types 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "informalsystems-malachitebft-core-types",
  "multiaddr",
  "serde",
 ]
@@ -1582,20 +1582,12 @@ dependencies = [
 [[package]]
 name = "informalsystems-malachitebft-core-state-machine"
 version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e60a5770c3dd3d342a07481cbe0db8080b4966af59fde17212f19e324a5ccbbe"
 dependencies = [
  "derive-where",
  "displaydoc",
- "informalsystems-malachitebft-core-types 0.5.0",
-]
-
-[[package]]
-name = "informalsystems-malachitebft-core-types"
-version = "0.5.0"
-dependencies = [
- "bytes",
- "derive-where",
- "informalsystems-malachitebft-peer 0.5.0",
- "thiserror 2.0.12",
+ "informalsystems-malachitebft-core-types",
 ]
 
 [[package]]
@@ -1606,25 +1598,18 @@ checksum = "14b42a90f82e60414ea29e79f96ff28a2eebf1b10f3107ab42208f049be33f9c"
 dependencies = [
  "bytes",
  "derive-where",
- "informalsystems-malachitebft-peer 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "informalsystems-malachitebft-peer",
  "thiserror 2.0.12",
 ]
 
 [[package]]
 name = "informalsystems-malachitebft-metrics"
 version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "508750b3dc4ca64defb9eb726e0c44e3faa854c3218a1ac26301bc4e47a6f472"
 dependencies = [
  "informalsystems-malachitebft-core-state-machine",
  "prometheus-client",
-]
-
-[[package]]
-name = "informalsystems-malachitebft-peer"
-version = "0.5.0"
-dependencies = [
- "bs58",
- "multihash",
- "thiserror 2.0.12",
 ]
 
 [[package]]
