@@ -40,7 +40,13 @@ impl TestNode {
 
         // Create network actor
         let keypair = Keypair::generate_ed25519();
-        let network_actor = spawn_mempool_network_actor(&network_config, &keypair, &metrics).await;
+        let network_actor = spawn_mempool_network_actor(
+            &network_config,
+            &keypair,
+            tracing::Span::current(),
+            &metrics,
+        )
+        .await;
 
         // Create mempool actor
         let mempool_config = MempoolConfig {

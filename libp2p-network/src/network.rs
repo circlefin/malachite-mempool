@@ -1,5 +1,6 @@
 use libp2p::PeerId;
 use ractor::async_trait;
+use tracing::Span;
 
 use crate::{
     handle::CtrlHandle,
@@ -50,12 +51,15 @@ pub enum Msg {
     NewEvent(Event),
 }
 
-pub struct MempoolNetwork;
+pub struct MempoolNetwork {
+    span: Span,
+}
 
 impl MempoolNetwork {
     pub async fn spawn(
         keypair: Keypair,
         config: MempoolNetworkConfig,
+        span: Span,
         metrics: SharedRegistry,
     ) -> Result<ActorRef<Msg>, ractor::SpawnErr> {
         let args = Args {
@@ -64,7 +68,9 @@ impl MempoolNetwork {
             metrics,
         };
 
-        let (actor_ref, _) = Actor::spawn(None, Self, args).await?;
+        let node = Self { span: span.clone() };
+
+        let (actor_ref, _) = Actor::spawn(None, node, args).await?;
         Ok(actor_ref)
     }
 }
@@ -108,7 +114,7 @@ impl Actor for MempoolNetwork {
         Ok(())
     }
 
-    #[tracing::instrument(name = "gossip.mempool", skip_all)]
+    #[tracing::instrument(name = "gossip.mempool", parent = &self.span, skip_all)]
     async fn handle(
         &self,
         _myself: ActorRef<Msg>,
@@ -184,9 +190,10 @@ impl Actor for MempoolNetwork {
 pub async fn spawn_mempool_network_actor(
     cfg: &MempoolNetworkConfig,
     private_key: &Keypair,
+    span: Span,
     registry: &SharedRegistry,
 ) -> MempoolNetworkActorRef {
-    MempoolNetwork::spawn(private_key.clone(), cfg.clone(), registry.clone())
+    MempoolNetwork::spawn(private_key.clone(), cfg.clone(), span, registry.clone())
         .await
         .unwrap()
 }

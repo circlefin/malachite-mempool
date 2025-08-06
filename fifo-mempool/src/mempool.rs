@@ -245,14 +245,32 @@ impl Mempool {
                     warn!(reason = ?check_tx_outcome, "check_tx successful, tx is invalid, not adding to mempool");
                 }
                 if let Some(reply) = reply {
-                    reply.send(Ok(check_tx_outcome))?;
+                    debug!("MEMPOOL DEBUG: handle_check_tx_result() - sending success reply");
+                    match reply.send(Ok(check_tx_outcome)) {
+                        Ok(_) => {
+                            debug!("MEMPOOL DEBUG: handle_check_tx_result() - success reply sent")
+                        }
+                        Err(e) => {
+                            error!("🔍 MEMPOOL DEBUG: handle_check_tx_result() - failed to send success reply: {:?}", e);
+                            return Err(e.into());
+                        }
+                    }
                 }
             }
 
             Err(app_error) => {
                 error!(reason = ?app_error, "check_tx failed!");
                 if let Some(reply) = reply {
-                    reply.send(Err(MempoolError::App(app_error.to_string())))?;
+                    debug!("MEMPOOL DEBUG: handle_check_tx_result() - sending error reply");
+                    match reply.send(Err(MempoolError::App(app_error.to_string()))) {
+                        Ok(_) => {
+                            debug!("MEMPOOL DEBUG: handle_check_tx_result() - error reply sent")
+                        }
+                        Err(e) => {
+                            error!("MEMPOOL DEBUG: handle_check_tx_result() - failed to send error reply: {:?}", e);
+                            return Err(e.into());
+                        }
+                    }
                 }
             }
         }
@@ -261,6 +279,10 @@ impl Mempool {
     }
 
     fn take(&self, state: &mut State, reply: RpcReplyPort<Vec<RawTx>>) -> ActorResult<()> {
+        debug!(
+            "MEMPOOL DEBUG: take() - current mempool size: {}",
+            state.txs.len()
+        );
         let mut txs = Vec::with_capacity(min(self.config.max_txs_per_block, state.txs.len()));
 
         let mut max_tx_bytes = self.config.max_txs_bytes as usize;
