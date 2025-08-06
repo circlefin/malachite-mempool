@@ -4,10 +4,16 @@ A production-ready mempool ready to be used with Malachite BFT Consensus Engine
 
 ## License
 
-Copyright © 2025 Informal Systems Inc. All rights reserved.
+Copyright 2025 Informal Systems Inc
 
-This repository and its contents, including but not limited to source code, documentation, specifications, and associated materials (collectively, the "Software"), are proprietary to Informal Systems Inc (the "Company").
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-The Software is provided for reference purposes only. No license, express or implied, is granted. You may not copy, modify, distribute, sublicense, or use the Software, in whole or in part, for any purpose—commercial or non-commercial—without the prior written consent of the Company.
+    http://www.apache.org/licenses/LICENSE-2.0
 
-Unauthorized use of this Software is strictly prohibited.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
