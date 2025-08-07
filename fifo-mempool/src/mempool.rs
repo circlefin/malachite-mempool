@@ -53,9 +53,7 @@ pub type MempoolActorRef = ActorRef<Msg>;
 
 #[derive(Default, Clone)]
 pub struct State {
-    // Store tx with its hash to help with removal
-    // TODO: redesign the way mempool stores txs to avoid this
-    pub txs: VecDeque<(RawTx, TxHash)>,
+    pub txs: VecDeque<RawTx>,
     pub tx_hashes: HashMap<TxHash, usize>,
 }
 
@@ -218,7 +216,7 @@ impl Mempool {
                     } else {
                         debug!("check_tx successful, tx is valid, adding tx to mempool");
                         state.tx_hashes.insert(tx_hash.clone(), state.txs.len());
-                        state.txs.push_back((tx.clone(), tx_hash));
+                        state.txs.push_back(tx.clone());
                         self.gossip_tx(tx)?;
                     }
                 } else {
@@ -267,7 +265,7 @@ impl Mempool {
 
         let mut max_tx_bytes = self.config.max_txs_bytes as usize;
 
-        for (tx, _) in state.txs.iter() {
+        for tx in state.txs.iter() {
             max_tx_bytes = max_tx_bytes.saturating_sub(tx.len());
 
             if max_tx_bytes == 0 {
@@ -297,10 +295,10 @@ impl Mempool {
         let mut new_hashes = HashMap::with_capacity(state.txs.len() - ignore.len());
 
         let mut counter = 0;
-        for (index, (tx, tx_hash)) in state.txs.iter().enumerate() {
-            if !ignore.contains(&index) {
-                new_hashes.insert(tx_hash.clone(), counter);
-                new_txs.push_back((tx.clone(), tx_hash.clone()));
+        for (hash, index) in state.tx_hashes.iter() {
+            if !ignore.contains(index) {
+                new_hashes.insert(hash.clone(), counter);
+                new_txs.push_back(state.txs[*index].clone());
                 counter += 1;
             }
         }
