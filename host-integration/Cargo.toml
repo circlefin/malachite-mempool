@@ -16,7 +16,6 @@ libp2p = { workspace = true }
 libp2p-identity = { workspace = true }
 libp2p-network = { path = "../libp2p-network" }
 malachitebft-config = { workspace = true }
-malachitebft-metrics = { workspace = true }
 prometheus-client = { workspace = true }
 prost = { workspace = true }
 ractor = { workspace = true }

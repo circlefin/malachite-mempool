@@ -6,8 +6,6 @@ use libp2p::{gossipsub, identify, ping};
 pub use libp2p::identity::Keypair;
 pub use libp2p::{Multiaddr, PeerId};
 
-use malachitebft_metrics::Registry;
-
 use crate::PROTOCOL;
 
 const MAX_TRANSMIT_SIZE: usize = 4 * 1024 * 1024; // 4 MiB
@@ -59,22 +57,6 @@ impl Behaviour {
                 gossipsub_config(),
             )
             .unwrap(),
-        }
-    }
-
-    pub fn new_with_metrics(keypair: &Keypair, registry: &mut Registry) -> Self {
-        Self {
-            identify: identify::Behaviour::new(identify::Config::new(
-                PROTOCOL.to_string(),
-                keypair.public(),
-            )),
-            ping: ping::Behaviour::new(ping::Config::new().with_interval(Duration::from_secs(5))),
-            gossipsub: gossipsub::Behaviour::new(
-                gossipsub::MessageAuthenticity::Signed(keypair.clone()),
-                gossipsub_config(),
-            )
-            .unwrap()
-            .with_metrics(registry, Default::default()),
         }
     }
 }

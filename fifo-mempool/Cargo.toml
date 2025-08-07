@@ -9,7 +9,6 @@ futures = { workspace = true }
 libp2p = { workspace = true }
 libp2p-identity = { workspace = true }
 libp2p-network = { path = "../libp2p-network" }
-malachitebft-metrics = { workspace = true }
 prometheus = { workspace = true }
 prometheus-client = { workspace = true }
 prost = { workspace = true }

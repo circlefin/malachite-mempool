@@ -12,7 +12,6 @@ use crate::types::MempoolTransactionBatch;
 use crate::Event;
 use {
     libp2p_identity::Keypair,
-    malachitebft_metrics::SharedRegistry,
     ractor::{Actor, ActorProcessingErr, ActorRef},
     std::{collections::BTreeSet, sync::Arc},
     tokio::task::JoinHandle,
@@ -26,7 +25,6 @@ pub type MempoolNetworkConfig = crate::Config;
 pub struct Args {
     pub keypair: Keypair,
     pub config: MempoolNetworkConfig,
-    pub metrics: SharedRegistry,
 }
 
 pub enum State {
@@ -60,13 +58,8 @@ impl MempoolNetwork {
         keypair: Keypair,
         config: MempoolNetworkConfig,
         span: Span,
-        metrics: SharedRegistry,
     ) -> Result<ActorRef<Msg>, ractor::SpawnErr> {
-        let args = Args {
-            keypair,
-            config,
-            metrics,
-        };
+        let args = Args { keypair, config };
 
         let node = Self { span: span.clone() };
 
@@ -86,7 +79,7 @@ impl Actor for MempoolNetwork {
         myself: ActorRef<Msg>,
         args: Args,
     ) -> Result<State, ActorProcessingErr> {
-        let handle = crate::spawn(args.keypair, args.config, args.metrics).await?;
+        let handle = crate::spawn(args.keypair, args.config).await?;
         let (mut recv_handle, ctrl_handle) = handle.split();
 
         let recv_task = tokio::spawn(async move {
@@ -191,9 +184,8 @@ pub async fn spawn_mempool_network_actor(
     cfg: &MempoolNetworkConfig,
     private_key: &Keypair,
     span: Span,
-    registry: &SharedRegistry,
 ) -> MempoolNetworkActorRef {
-    MempoolNetwork::spawn(private_key.clone(), cfg.clone(), span, registry.clone())
+    MempoolNetwork::spawn(private_key.clone(), cfg.clone(), span)
         .await
         .unwrap()
 }

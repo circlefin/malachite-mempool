@@ -877,7 +877,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "futures",
- "informalsystems-malachitebft-metrics",
  "libp2p",
  "libp2p-identity",
  "libp2p-network",
@@ -1272,7 +1271,6 @@ dependencies = [
  "eyre",
  "fifo-mempool",
  "informalsystems-malachitebft-config",
- "informalsystems-malachitebft-metrics",
  "libp2p",
  "libp2p-identity",
  "libp2p-network",
@@ -1579,16 +1577,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "informalsystems-malachitebft-core-state-machine"
-version = "0.5.0"
-source = "git+https://github.com/informalsystems/malachite.git?branch=anca%2Factor_with_fifo_mempool#3059535018d899013650d6d48016d1e105d8e366"
-dependencies = [
- "derive-where",
- "displaydoc",
- "informalsystems-malachitebft-core-types",
-]
-
-[[package]]
 name = "informalsystems-malachitebft-core-types"
 version = "0.5.0"
 source = "git+https://github.com/informalsystems/malachite.git?branch=anca%2Factor_with_fifo_mempool#3059535018d899013650d6d48016d1e105d8e366"
@@ -1597,15 +1585,6 @@ dependencies = [
  "derive-where",
  "informalsystems-malachitebft-peer",
  "thiserror 2.0.12",
-]
-
-[[package]]
-name = "informalsystems-malachitebft-metrics"
-version = "0.5.0"
-source = "git+https://github.com/informalsystems/malachite.git?branch=anca%2Factor_with_fifo_mempool#3059535018d899013650d6d48016d1e105d8e366"
-dependencies = [
- "informalsystems-malachitebft-core-state-machine",
- "prometheus-client",
 ]
 
 [[package]]
@@ -1948,7 +1927,6 @@ dependencies = [
  "async-trait",
  "eyre",
  "futures",
- "informalsystems-malachitebft-metrics",
  "informalsystems-malachitebft-proto",
  "libp2p",
  "libp2p-gossipsub",

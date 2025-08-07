@@ -4,8 +4,6 @@ use fifo_mempool::{
 };
 use libp2p_identity::Keypair;
 use libp2p_network::{network::spawn_mempool_network_actor, MempoolNetworkConfig};
-use malachitebft_metrics::SharedRegistry;
-use prometheus_client::registry::Registry;
 use ractor::ActorRef;
 use std::sync::Arc;
 
@@ -35,18 +33,10 @@ impl TestNode {
             idle_connection_timeout: config.idle_connection_timeout,
         };
 
-        // Create metrics registry
-        let metrics = SharedRegistry::new(Registry::with_prefix("test"), None);
-
         // Create network actor
         let keypair = Keypair::generate_ed25519();
-        let network_actor = spawn_mempool_network_actor(
-            &network_config,
-            &keypair,
-            tracing::Span::current(),
-            &metrics,
-        )
-        .await;
+        let network_actor =
+            spawn_mempool_network_actor(&network_config, &keypair, tracing::Span::current()).await;
 
         // Create mempool actor
         let mempool_config = MempoolConfig {
