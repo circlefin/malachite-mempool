@@ -53,7 +53,9 @@ pub type MempoolActorRef = ActorRef<Msg>;
 
 #[derive(Default, Clone)]
 pub struct State {
-    pub txs: VecDeque<RawTx>,
+    // Store tx with its hash to help with removal
+    // TODO: redesign the way mempool stores txs to avoid this
+    pub txs: VecDeque<(RawTx, TxHash)>,
     pub tx_hashes: HashMap<TxHash, usize>,
 }
 
@@ -166,18 +168,8 @@ impl Mempool {
         myself: &MempoolActorRef,
         tx: RawTx,
         reply: Option<RpcReplyPort<Result<Box<dyn crate::CheckTxOutcome>, MempoolError>>>,
-        state: &mut State,
+        _state: &mut State,
     ) -> ActorResult<()> {
-        let tx_hash = tx.hash();
-
-        if state.exists(&tx_hash) {
-            warn!("tx already exists in mempool");
-            if let Some(reply) = reply {
-                reply.send(Err(MempoolError::TxAlreadyExists(tx_hash)))?;
-            }
-            return Ok(());
-        }
-
         match &self.app {
             Some(app) => {
                 let tx_clone = tx.clone();
@@ -193,31 +185,13 @@ impl Mempool {
                 )?;
             }
             None => {
-                // No app configured, treat as valid and add directly to mempool
-                debug!("No app configured, treating tx as valid, adding tx to mempool");
-                let tx_hash = tx.hash();
-                state.tx_hashes.insert(tx_hash.clone(), state.txs.len());
-                state.txs.push_back(tx.clone());
-                self.gossip_tx(tx)?;
-
+                // TODO: this will be removed and self.app will be required
+                // No app configured - cannot process transactions without hash function
+                warn!("No app configured, cannot process transaction without hash function");
                 if let Some(reply) = reply {
-                    // Create a simple success outcome
-                    use crate::types::tx::TxHash;
-                    use crate::CheckTxOutcome;
-
-                    #[derive(Debug)]
-                    struct SimpleSuccess(TxHash);
-
-                    impl CheckTxOutcome for SimpleSuccess {
-                        fn is_valid(&self) -> bool {
-                            true
-                        }
-                        fn hash(&self) -> TxHash {
-                            self.0.clone()
-                        }
-                    }
-
-                    reply.send(Ok(Box::new(SimpleSuccess(tx_hash))))?;
+                    reply.send(Err(MempoolError::App(
+                        "No app configured to provide transaction hash".to_string(),
+                    )))?;
                 }
             }
         }
@@ -235,12 +209,18 @@ impl Mempool {
     ) -> ActorResult<()> {
         match result {
             Ok(check_tx_outcome) => {
+                let tx_hash = check_tx_outcome.hash();
+
                 if check_tx_outcome.is_valid() {
-                    debug!("check_tx successful, tx is valid, adding tx to mempool");
-                    let tx_hash = tx.hash();
-                    state.tx_hashes.insert(tx_hash, state.txs.len());
-                    state.txs.push_back(tx.clone());
-                    self.gossip_tx(tx)?;
+                    // Check for duplicates using app-provided hash
+                    if state.exists(&tx_hash) {
+                        warn!("tx already exists in mempool, not adding duplicate");
+                    } else {
+                        debug!("check_tx successful, tx is valid, adding tx to mempool");
+                        state.tx_hashes.insert(tx_hash.clone(), state.txs.len());
+                        state.txs.push_back((tx.clone(), tx_hash));
+                        self.gossip_tx(tx)?;
+                    }
                 } else {
                     warn!(reason = ?check_tx_outcome, "check_tx successful, tx is invalid, not adding to mempool");
                 }
@@ -287,10 +267,7 @@ impl Mempool {
 
         let mut max_tx_bytes = self.config.max_txs_bytes as usize;
 
-        for tx in state.txs.iter() {
-            // we are not removing the tx from the mempool, here because prepare proposal could not
-            // include some txs. Txs will be removed during decided.
-
+        for (tx, _) in state.txs.iter() {
             max_tx_bytes = max_tx_bytes.saturating_sub(tx.len());
 
             if max_tx_bytes == 0 {
@@ -320,10 +297,10 @@ impl Mempool {
         let mut new_hashes = HashMap::with_capacity(state.txs.len() - ignore.len());
 
         let mut counter = 0;
-        for (index, tx) in state.txs.iter().enumerate() {
+        for (index, (tx, tx_hash)) in state.txs.iter().enumerate() {
             if !ignore.contains(&index) {
-                new_hashes.insert(tx.hash(), counter);
-                new_txs.push_back(tx.clone());
+                new_hashes.insert(tx_hash.clone(), counter);
+                new_txs.push_back((tx.clone(), tx_hash.clone()));
                 counter += 1;
             }
         }

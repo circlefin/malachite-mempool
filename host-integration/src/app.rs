@@ -89,14 +89,15 @@ impl MempoolApp for TestMempoolApp {
         // Deserialize the transaction
         match TestTx::deserialize(&tx.0) {
             Ok(test_tx) => {
+                let tx_hash = test_tx.hash();
                 // Return error for transaction with value 9999
                 if test_tx.0 == 9999 {
                     Ok(Box::new(TestCheckTxOutcome::Error(
-                        tx.hash(),
+                        tx_hash,
                         "Transaction 9999 is not allowed".to_string(),
                     )))
                 } else {
-                    Ok(Box::new(TestCheckTxOutcome::Success(tx.hash())))
+                    Ok(Box::new(TestCheckTxOutcome::Success(tx_hash)))
                 }
             }
             Err(e) => Err(Box::new(std::io::Error::new(

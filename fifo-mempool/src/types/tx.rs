@@ -1,5 +1,4 @@
 use prost::bytes::Bytes;
-use sha2::{Digest, Sha256};
 
 // Placeholder for transaction hash type
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -14,12 +13,6 @@ impl std::fmt::Display for TxHash {
 pub struct RawTx(pub Bytes);
 
 impl RawTx {
-    pub fn hash(&self) -> TxHash {
-        let mut hasher = Sha256::new();
-        hasher.update(&self.0);
-        let hash = hasher.finalize();
-        TxHash(Bytes::from(hash.to_vec()))
-    }
     pub fn len(&self) -> usize {
         self.0.len()
     }

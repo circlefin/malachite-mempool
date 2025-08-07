@@ -76,8 +76,7 @@ impl TestNode {
 
     pub async fn remove_tx(&mut self, tx: &TestTx) {
         // Send remove message to the mempool actor using cast (non-RPC)
-        let raw_tx = tx.serialize();
-        let tx_hash = raw_tx.hash();
+        let tx_hash = tx.hash();
         let result = self.mempool_actor.cast(Msg::Remove(vec![tx_hash.clone()]));
         if result.is_ok() {
             println!(
