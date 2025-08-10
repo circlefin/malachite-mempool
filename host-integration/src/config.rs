@@ -10,6 +10,7 @@ pub struct HostMempoolConfig {
     pub idle_connection_timeout: Duration,
     pub max_txs_bytes: ByteSize,
     pub avg_tx_bytes: ByteSize,
+    pub max_pool_size: usize,
 }
 
 impl Default for HostMempoolConfig {
@@ -19,6 +20,7 @@ impl Default for HostMempoolConfig {
             idle_connection_timeout: Duration::from_secs(30),
             max_txs_bytes: ByteSize::mb(4),
             avg_tx_bytes: ByteSize::kb(100),
+            max_pool_size: 1000,
         }
     }
 }

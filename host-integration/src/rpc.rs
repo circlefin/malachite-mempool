@@ -29,8 +29,8 @@ impl Rpc {
         tx: TestTx,
     ) -> Result<(), ActorProcessingErr> {
         let raw_tx = tx.serialize();
-        let tx_hash = tx.hash(); // Use TestTx::hash() instead of raw_tx.hash()
-                                 // Send add message to the mempool actor using RPC call
+        let tx_hash = tx.hash();
+        // Send add message to the mempool actor using RPC call
         self.mempool_actor
             .call_and_forward(
                 |reply| MempoolMsg::Add { tx: raw_tx, reply },

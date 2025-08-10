@@ -1,12 +1,40 @@
 use fifo_mempool::{
-    ActorResult, AppResult, CheckTxOutcome, MempoolApp, MempoolAppMsg, RawTx, TxHash,
+    ActorResult, AppResult, CheckTxOutcome, MempoolApp, MempoolEvent, MempoolMsg, RawTx, TxHash,
 };
+
+use libp2p_network::output_port::OutputPortSubscriberTrait;
 use prost::bytes::Bytes;
-use ractor::{async_trait, Actor, ActorRef};
+use ractor::{async_trait, Actor, ActorRef, RpcReplyPort};
 use std::sync::Arc;
+
+pub type AppMsg = Msg;
+
+pub enum Msg {
+    MempoolEvent(MempoolEvent),
+    Take { reply: RpcReplyPort<Vec<RawTx>> },
+    Remove(Vec<TestTxHash>),
+}
+
+impl From<Arc<MempoolEvent>> for Msg {
+    fn from(event: Arc<MempoolEvent>) -> Self {
+        match Arc::try_unwrap(event) {
+            Ok(event) => Msg::MempoolEvent(event),
+            Err(_) => panic!("Cannot unwrap Arc<MempoolEvent> with multiple references"),
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TestTx(pub u64); // Unique transaction by id
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TestTxHash(pub u64);
+
+impl From<TestTxHash> for TxHash {
+    fn from(test_hash: TestTxHash) -> Self {
+        TxHash(Bytes::from(test_hash.0.to_le_bytes().to_vec()))
+    }
+}
 
 impl TestTx {
     pub fn serialize(&self) -> RawTx {
@@ -15,15 +43,16 @@ impl TestTx {
     pub fn deserialize(bytes: &[u8]) -> Result<TestTx, anyhow::Error> {
         Ok(TestTx(u64::from_le_bytes(bytes.try_into().unwrap())))
     }
-    pub fn hash(&self) -> TxHash {
-        TxHash(Bytes::from(self.0.to_le_bytes().to_vec()))
+
+    pub fn hash(&self) -> TestTxHash {
+        TestTxHash(self.0)
     }
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TestCheckTxOutcome {
-    Success(TxHash),
-    Error(TxHash, String),
+    Success(TestTxHash),
+    Error(TestTxHash, String),
 }
 
 impl CheckTxOutcome for TestCheckTxOutcome {
@@ -32,19 +61,23 @@ impl CheckTxOutcome for TestCheckTxOutcome {
     }
     fn hash(&self) -> TxHash {
         match self {
-            TestCheckTxOutcome::Success(hash) => hash.clone(),
-            TestCheckTxOutcome::Error(hash, _) => hash.clone(),
+            TestCheckTxOutcome::Success(hash) => hash.clone().into(),
+            TestCheckTxOutcome::Error(hash, _) => hash.clone().into(),
         }
     }
 }
 
 pub struct TestMempoolAppActor {
     app: Arc<TestMempoolApp>,
+    mempool_actor: ActorRef<MempoolMsg>,
 }
 
 impl TestMempoolAppActor {
-    pub async fn spawn(app: Arc<TestMempoolApp>) -> ActorRef<MempoolAppMsg> {
-        let actor = Self { app };
+    pub async fn spawn(
+        app: Arc<TestMempoolApp>,
+        mempool_actor: ActorRef<MempoolMsg>,
+    ) -> ActorRef<Msg> {
+        let actor = Self { app, mempool_actor };
         let (actor_ref, _) = Actor::spawn(None, actor, ()).await.unwrap();
         actor_ref
     }
@@ -53,14 +86,19 @@ impl TestMempoolAppActor {
 #[async_trait]
 impl Actor for TestMempoolAppActor {
     type Arguments = ();
-    type Msg = MempoolAppMsg;
+    type Msg = Msg;
     type State = ();
 
     async fn pre_start(
         &self,
-        _myself: ActorRef<Self::Msg>,
+        myself: ActorRef<Self::Msg>,
         _args: Self::Arguments,
     ) -> ActorResult<Self::State> {
+        let subscriber: Box<dyn OutputPortSubscriberTrait<Arc<MempoolEvent>>> =
+            Box::new(myself.clone());
+        self.mempool_actor
+            .cast(MempoolMsg::Subscribe(Box::new(subscriber)))?;
+
         Ok(())
     }
 
@@ -71,18 +109,30 @@ impl Actor for TestMempoolAppActor {
         _state: &mut Self::State,
     ) -> ActorResult<()> {
         match msg {
-            MempoolAppMsg::CheckTx { tx, reply } => {
+            Msg::MempoolEvent(MempoolEvent::CheckTx { tx, reply }) => {
                 let result = self.app.check_tx(&tx);
-                reply.send(result.map_err(|e| fifo_mempool::MempoolError::App(e.to_string())))?;
+                let response = MempoolMsg::CheckTxResult { tx, result, reply };
+                self.mempool_actor.cast(response)?;
+            }
+            Msg::Remove(hashes) => {
+                let hashes: Vec<TxHash> = hashes.iter().map(|h| h.clone().into()).collect();
+                self.mempool_actor.cast(MempoolMsg::Remove(hashes))?;
+            }
+            Msg::Take { reply } => {
+                self.mempool_actor.cast(MempoolMsg::Take { reply })?;
             }
         }
         Ok(())
     }
 }
 
-pub async fn spawn_app_actor(app: Arc<TestMempoolApp>) -> ActorRef<MempoolAppMsg> {
-    TestMempoolAppActor::spawn(app).await
+pub async fn spawn_app_actor(
+    app: Arc<TestMempoolApp>,
+    mempool_actor: ActorRef<MempoolMsg>,
+) -> ActorRef<Msg> {
+    TestMempoolAppActor::spawn(app, mempool_actor).await
 }
+
 pub struct TestMempoolApp;
 impl MempoolApp for TestMempoolApp {
     fn check_tx(&self, tx: &RawTx) -> AppResult<Box<dyn CheckTxOutcome>> {
