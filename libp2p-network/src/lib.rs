@@ -4,11 +4,11 @@ use std::error::Error;
 use std::ops::ControlFlow;
 use std::time::Duration;
 
-use eyre::eyre;
 use futures::StreamExt;
 use libp2p::swarm::{self, SwarmEvent};
 use libp2p::{gossipsub, identify, SwarmBuilder};
 use prost::bytes::Bytes;
+use thiserror::Error;
 use tokio::sync::mpsc;
 use tracing::{debug, error, error_span, trace, Instrument};
 
@@ -76,6 +76,12 @@ impl fmt::Display for Channel {
 
 const PROTOCOL: &str = "/malachitebft-test-mempool/v1beta1";
 
+#[derive(Debug, Error)]
+pub enum NetworkError {
+    #[error("No valid transport protocol found in address: {addr}")]
+    NoValidTransport { addr: String },
+}
+
 pub type BoxError = Box<dyn Error + Send + Sync + 'static>;
 
 pub use Config as MempoolNetworkConfig;
@@ -133,10 +139,11 @@ pub struct State {
 }
 
 pub async fn spawn(keypair: Keypair, config: Config) -> Result<Handle, BoxError> {
-    let mut swarm = {
-        let builder = SwarmBuilder::with_existing_identity(keypair).with_tokio();
-        match TransportProtocol::from_multiaddr(&config.listen_addr) {
-            Some(TransportProtocol::Tcp) => Ok(builder
+    let builder = SwarmBuilder::with_existing_identity(keypair).with_tokio();
+
+    let mut swarm = match TransportProtocol::from_multiaddr(&config.listen_addr) {
+        Some(TransportProtocol::Tcp) => {
+            builder
                 .with_tcp(
                     libp2p::tcp::Config::new().nodelay(true), // Disable Nagle's algorithm
                     libp2p::noise::Config::new,
@@ -145,20 +152,21 @@ pub async fn spawn(keypair: Keypair, config: Config) -> Result<Handle, BoxError>
                 .with_dns()?
                 .with_behaviour(Behaviour::new)?
                 .with_swarm_config(|cfg| config.apply(cfg))
-                .build()),
-            Some(TransportProtocol::Quic) => Ok(builder
-                .with_quic()
-                .with_dns()?
-                .with_behaviour(Behaviour::new)?
-                .with_swarm_config(|cfg| config.apply(cfg))
-                .build()),
-
-            None => Err(eyre!(
-                "No valid transport protocol found in listen address: {}",
-                config.listen_addr
-            )),
+                .build()
         }
-    }?;
+        Some(TransportProtocol::Quic) => builder
+            .with_quic()
+            .with_dns()?
+            .with_behaviour(Behaviour::new)?
+            .with_swarm_config(|cfg| config.apply(cfg))
+            .build(),
+        None => {
+            return Err(NetworkError::NoValidTransport {
+                addr: config.listen_addr.to_string(),
+            }
+            .into());
+        }
+    };
 
     for channel in Channel::all() {
         swarm

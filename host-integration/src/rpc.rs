@@ -1,9 +1,25 @@
-use eyre::eyre;
-
-use fifo_mempool::{ActorResult, Msg as MempoolMsg};
-use ractor::{async_trait, Actor, ActorProcessingErr, ActorRef};
+use fifo_mempool::{error::MempoolError, ActorResult, Msg as MempoolMsg};
+use ractor::{async_trait, Actor, ActorRef};
+use thiserror::Error;
 
 use crate::app::{TestCheckTxOutcome, TestTx};
+
+#[derive(Clone, Debug, Error)]
+pub enum RpcError {
+    #[error("Mempool operation failed: {0}")]
+    MempoolError(#[from] MempoolError),
+
+    #[error("Actor communication failed: {details}")]
+    ActorError { details: String },
+}
+
+impl<T> From<ractor::MessagingErr<T>> for RpcError {
+    fn from(err: ractor::MessagingErr<T>) -> Self {
+        RpcError::ActorError {
+            details: err.to_string(),
+        }
+    }
+}
 
 pub enum RpcMsg {
     AddTxReply(TestTx, TestCheckTxOutcome),
@@ -23,11 +39,7 @@ impl Rpc {
         let (actor_ref, _) = Actor::spawn(None, rpc, ()).await?;
         Ok(actor_ref)
     }
-    pub async fn add_tx(
-        &self,
-        actor_ref: &ActorRef<RpcMsg>,
-        tx: TestTx,
-    ) -> Result<(), ActorProcessingErr> {
+    pub async fn add_tx(&self, actor_ref: &ActorRef<RpcMsg>, tx: TestTx) -> Result<(), RpcError> {
         let raw_tx = tx.serialize();
         let tx_hash = tx.hash();
         // Send add message to the mempool actor using RPC call
@@ -56,16 +68,20 @@ impl Rpc {
                 },
                 None,
             )
-            .map_err(|e| eyre!("Error when sending decided value to host: {e:?}"))?
+            .map_err(|e| RpcError::ActorError {
+                details: format!("Error when sending transaction to mempool: {e:?}"),
+            })?
             .await
-            .map_err(|e| eyre!("Error waiting for result: {e:?}"))?;
+            .map_err(|e| RpcError::ActorError {
+                details: format!("Error waiting for result: {e:?}"),
+            })?;
         Ok(())
     }
 
     pub async fn get_state(
         &self,
         actor_ref: &ActorRef<RpcMsg>,
-    ) -> Result<Option<TestCheckTxOutcome>, ActorProcessingErr> {
+    ) -> Result<Option<TestCheckTxOutcome>, RpcError> {
         let result = actor_ref.call(RpcMsg::GetState, None).await?;
         Ok(result.unwrap())
     }
@@ -96,9 +112,9 @@ impl Actor for Rpc {
                 *state = Some(outcome);
             }
             RpcMsg::GetState(reply) => {
-                reply
-                    .send(state.clone())
-                    .map_err(|e| eyre!("Failed to send state: {e:?}"))?;
+                reply.send(state.clone()).map_err(|e| {
+                    ractor::ActorProcessingErr::from(format!("Failed to send state: {e:?}"))
+                })?;
             }
         }
         Ok(())

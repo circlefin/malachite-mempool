@@ -1,3 +1,4 @@
+use crate::error::AppError;
 use fifo_mempool::{
     ActorResult, AppResult, CheckTxOutcome, MempoolApp, MempoolEvent, MempoolMsg, RawTx, TxHash,
 };
@@ -40,8 +41,11 @@ impl TestTx {
     pub fn serialize(&self) -> RawTx {
         RawTx(Bytes::from(self.0.to_le_bytes().to_vec()))
     }
-    pub fn deserialize(bytes: &[u8]) -> Result<TestTx, anyhow::Error> {
-        Ok(TestTx(u64::from_le_bytes(bytes.try_into().unwrap())))
+    pub fn deserialize(bytes: &[u8]) -> Result<TestTx, AppError> {
+        let bytes_array: [u8; 8] = bytes.try_into().map_err(|_| {
+            AppError::deserialization_failed("Expected 8 bytes for TestTx deserialization")
+        })?;
+        Ok(TestTx(u64::from_le_bytes(bytes_array)))
     }
 
     pub fn hash(&self) -> TestTxHash {

@@ -1,5 +1,5 @@
 use {
-    crate::{types::tx::TxHash, ActorResult, RawTx},
+    crate::{error::MempoolError, types::tx::TxHash, ActorResult, RawTx},
     libp2p_network::output_port::{OutputPort, OutputPortSubscriber},
     ractor::{async_trait, Actor, ActorRef, RpcReplyPort},
     serde::{Deserialize, Serialize},
@@ -8,7 +8,6 @@ use {
         collections::{HashMap, HashSet, VecDeque},
         sync::Arc,
     },
-    thiserror::Error,
     tracing::{debug, error, info, trace, warn, Span},
 };
 
@@ -176,7 +175,9 @@ impl Mempool {
         if state.txs.len() >= self.config.max_pool_size {
             if let Some(reply) = reply {
                 if let Ok(reply) = Arc::try_unwrap(reply) {
-                    reply.send(Err(MempoolError::MempoolFull))?;
+                    let error =
+                        MempoolError::mempool_full(state.txs.len(), self.config.max_pool_size);
+                    reply.send(Err(error))?;
                 }
             }
             return Ok(());
@@ -204,17 +205,36 @@ impl Mempool {
                 if check_tx_outcome.is_valid() {
                     // Check for duplicates using app-provided hash
                     if state.exists(&tx_hash) {
-                        warn!("tx already exists in mempool, not adding duplicate");
-                    } else {
-                        // Add the transaction to the mempool
-                        trace!("check_tx successful, tx is valid, adding tx to mempool");
-                        state.tx_hashes.insert(tx_hash.clone(), state.txs.len());
-                        state.txs.push_back(tx.clone());
-
-                        // Only gossip if the transaction was received from the local endpoint
-                        if reply.is_some() {
-                            self.gossip_tx(tx)?;
+                        warn!("tx already exists in mempool, sending duplicate error");
+                        if let Some(reply) = reply {
+                            if let Ok(reply) = Arc::try_unwrap(reply) {
+                                let error = MempoolError::tx_already_exists(tx_hash);
+                                match reply.send(Err(error)) {
+                                    Ok(_) => {
+                                        trace!(
+                                            "handle_check_tx_result() duplicate error reply sent"
+                                        )
+                                    }
+                                    Err(e) => {
+                                        error!(
+                                            "handle_check_tx_result() failed to send duplicate error reply: {:?}",
+                                            e
+                                        );
+                                        return Err(e.into());
+                                    }
+                                }
+                            }
                         }
+                        return Ok(());
+                    }
+                    // Add the transaction to the mempool
+                    trace!("check_tx successful, tx is valid, adding tx to mempool");
+                    state.tx_hashes.insert(tx_hash.clone(), state.txs.len());
+                    state.txs.push_back(tx.clone());
+
+                    // Only gossip if the transaction was received from the local endpoint
+                    if reply.is_some() {
+                        self.gossip_tx(tx)?;
                     }
                 } else {
                     warn!(reason = ?check_tx_outcome, "check_tx successful, tx is invalid, not adding to mempool");
@@ -242,7 +262,9 @@ impl Mempool {
                 if let Some(reply) = reply {
                     warn!("handle_check_tx_result(), sending error reply");
                     if let Ok(reply) = Arc::try_unwrap(reply) {
-                        match reply.send(Err(MempoolError::App(app_error.to_string()))) {
+                        let mempool_error =
+                            MempoolError::invalid_transaction(app_error.to_string());
+                        match reply.send(Err(mempool_error)) {
                             Ok(_) => {
                                 debug!("handle_check_tx_result() error, reply sent")
                             }
@@ -368,18 +390,6 @@ impl Actor for Mempool {
 
         Ok(())
     }
-}
-
-#[derive(Clone, Debug, Error)]
-pub enum MempoolError {
-    #[error("Application error: {0}")]
-    App(String),
-
-    #[error("tx already exists in mempool: {0}")]
-    TxAlreadyExists(TxHash),
-
-    #[error("mempool is full")]
-    MempoolFull,
 }
 
 pub async fn spawn_mempool_actor(

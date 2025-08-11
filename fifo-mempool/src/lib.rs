@@ -1,6 +1,8 @@
+pub mod error;
 pub mod mempool;
 pub mod types;
 
+pub use error::MempoolError;
 pub use mempool::*;
 pub use types::tx::{RawTx, TxHash};
 

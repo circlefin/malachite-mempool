@@ -20,6 +20,7 @@ prometheus-client = { workspace = true }
 prost = { workspace = true }
 ractor = { workspace = true }
 serde = { workspace = true }
+thiserror = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }

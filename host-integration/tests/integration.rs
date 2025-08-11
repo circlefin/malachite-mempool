@@ -41,6 +41,62 @@ async fn test_mempool_error_handling() {
 }
 
 #[tokio::test]
+async fn test_duplicate_transaction_handling() {
+    let _ = tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .try_init();
+
+    println!("Testing duplicate transaction handling...");
+
+    let mut nodes = create_nodes(1, 10000).await;
+    let node = &mut nodes[0];
+
+    let tx = TestTx(2001);
+
+    // First addition should succeed
+    node.rpc.add_tx(&node.rpc_actor, tx.clone()).await.unwrap();
+    let state = node.rpc.get_state(&node.rpc_actor).await.unwrap();
+    assert_eq!(state, Some(TestCheckTxOutcome::Success(tx.hash())));
+
+    // Verify transaction is in mempool
+    let txs = node.get_transactions().await;
+    assert_eq!(txs.len(), 1, "Mempool should contain 1 transaction");
+
+    // Second addition of same transaction should fail with duplicate error
+    node.rpc.add_tx(&node.rpc_actor, tx.clone()).await.unwrap();
+    let state = node.rpc.get_state(&node.rpc_actor).await.unwrap();
+
+    // Should be an error containing the duplicate message
+    match state {
+        Some(TestCheckTxOutcome::Error(hash, error_msg)) => {
+            assert_eq!(hash, tx.hash());
+            assert!(
+                error_msg.contains("Transaction already exists"),
+                "Error message should indicate duplicate transaction, got: {}",
+                error_msg
+            );
+            println!(
+                "✅ Duplicate transaction correctly rejected with error: {}",
+                error_msg
+            );
+        }
+        other => {
+            panic!("Expected duplicate error, got: {:?}", other);
+        }
+    }
+
+    // Verify mempool still contains only 1 transaction
+    let txs = node.get_transactions().await;
+    assert_eq!(
+        txs.len(),
+        1,
+        "Mempool should still contain only 1 transaction after duplicate attempt"
+    );
+
+    println!("✅ Duplicate transaction handling test passed!");
+}
+
+#[tokio::test]
 async fn test_three_node_gossip_and_removal() {
     println!("Starting three-node tx gossip and removal test with actors...");
 
@@ -50,8 +106,8 @@ async fn test_three_node_gossip_and_removal() {
 
     let mut nodes = create_nodes(3, 8000).await;
 
-    // Wait a bit for actors to initialize and connect
-    sleep(Duration::from_millis(300)).await;
+    // Wait for actors to initialize and network connections to stabilize
+    sleep(Duration::from_millis(1000)).await;
 
     // Test `add_tx() and `Msg::Add`
     // Each node adds a unique transaction (should trigger gossip)
@@ -77,7 +133,7 @@ async fn test_three_node_gossip_and_removal() {
         .unwrap();
 
     // Wait for transactions to be processed and gossiped
-    sleep(Duration::from_millis(200)).await;
+    sleep(Duration::from_millis(500)).await;
 
     // Test `get_transactions()` and `Msg::Take`
     // Check state - each node should have all transactions
@@ -100,7 +156,7 @@ async fn test_three_node_gossip_and_removal() {
     }
 
     // Wait for removal to be processed
-    sleep(Duration::from_millis(200)).await;
+    sleep(Duration::from_millis(300)).await;
 
     // Check final state after removal
     for (i, node) in nodes.iter().enumerate() {

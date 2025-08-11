@@ -25,7 +25,7 @@ sequenceDiagram
     Note over Mempool: Check if mempool is full<br/>(max_pool_size)
     
     alt Mempool Full
-        Mempool->>App: MempoolFull error
+        Mempool->>App: Error(MempoolFull)
     else Space Available
         Mempool->>+AppActor: CheckTx { tx, reply } (via output_port)
         
@@ -35,7 +35,7 @@ sequenceDiagram
         AppActor->>+Mempool: CheckTxResult { tx, result, reply }
         
         alt Validation Failed
-            Mempool->>App: Error(validation failure)
+            Mempool->>App: Error(InvalidTransaction)
         else Validation Successul
             Note over Mempool: Outcome received<br/>Check if transaction is valid
             
@@ -45,16 +45,19 @@ sequenceDiagram
             else Transaction Valid (outcome.is_valid())
                 Note over Mempool: Check for duplicates<br/>using tx_hash
             
-                alt Not Duplicate
+                alt Duplicate Transaction
+                    Note over Mempool: Transaction already exists<br/>in mempool
+                    Mempool->>App: Error(TxAlreadyExists)
+                else Not Duplicate
                     Mempool->>Mempool: Add to to mempool
                     
                     alt Local Transaction
                         Mempool->>+Network: Broadcast(tx) (gossip)
                         Network-->>-Mempool: Gossip to peers
                     end
-                                    
+                    
+                    Mempool->>App: Success(tx valid)
                 end
-                Mempool->>App: Success(tx valid)    
             end
         end
     end
@@ -63,6 +66,10 @@ sequenceDiagram
 **Key behaviors:**
 - **Network transactions**: Transactions received from peer nodes follow the same validation flow but are not re-gossiped to prevent network loops and duplicate transaction.
 - **Individual gossip**: Each transaction is currently gossiped individually without batching optimization
+- **Error types**: The mempool returns specific `MempoolError` variants:
+  - `MempoolFull`: When the mempool has reached its maximum capacity
+  - `InvalidTransaction`: When transaction validation fails 
+  - `TxAlreadyExists`: When attempting to add a duplicate transaction
 
 ## License
 
