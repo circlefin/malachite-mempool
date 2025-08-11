@@ -81,7 +81,6 @@ pub enum Msg {
         tx: RawTx,
         reply: RpcReplyPort<Result<Box<dyn crate::CheckTxOutcome>, MempoolError>>,
     },
-    // TODO: figure out how to properly handle messages outside consensus
     CheckTxResult {
         tx: RawTx,
         result: Result<Box<dyn crate::CheckTxOutcome>, Box<dyn std::error::Error + Send + Sync>>,
